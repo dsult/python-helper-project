@@ -1,26 +1,53 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+let disposable: vscode.Disposable | undefined;
+
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "python-helper-project" is now active!');
+	// disposable = vscode.window.onDidChangeActiveTextEditor(editor => {
+	// 	if (editor) {
+	// 		console.log(`Active editor changed to ${editor.document.uri}`);
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('python-helper-project.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from Python helper project!');
+	// 	}
+	// });
+
+	// context.subscriptions.push(disposable);
+
+	disposable = vscode.workspace.onDidChangeTextDocument(e => {
+		// если всего один символ добавили
+		if (e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1) {
+
+			const editor = vscode.window.activeTextEditor;
+			if (editor) {
+				const position = editor.selection.active;
+				const text = editor.document.getText(new vscode.Range(position.translate(0, -4), position.translate(0, 1)));
+				// console.log(`Word to the left of the cursor: ${text}`);
+				if (text === 'Hello') {
+					const edit = new vscode.WorkspaceEdit();
+					edit.replace(editor.document.uri, new vscode.Range(position.translate(0, 1), position.translate(0, 1)), ", word!1!");
+					vscode.workspace.applyEdit(edit);
+				}
+			}
+		}
 	});
+	context.subscriptions.push(disposable);
 
+	// тест штука, сейчас она вставляет Hello, world! на позицию курсора
+	disposable = vscode.commands.registerCommand('python-helper-project.test', () => {
+
+		const editor = vscode.window.activeTextEditor;
+		if (editor) {
+			const edit = new vscode.WorkspaceEdit();
+			// const position = new vscode.Position(0, 0);
+			const position = editor.selection.active;
+
+			const text = 'Hello, world!';
+			edit.replace(editor.document.uri, new vscode.Range(position, position), text);
+			vscode.workspace.applyEdit(edit);
+		}
+
+	});
 	context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function deactivate() { }
