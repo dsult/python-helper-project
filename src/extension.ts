@@ -1,4 +1,3 @@
-import { privateDecrypt } from 'crypto';
 import * as vscode from 'vscode';
 
 let disposable: vscode.Disposable | undefined;
@@ -18,43 +17,79 @@ export async function activate(context: vscode.ExtensionContext) {
 	const editor = vscode.window.activeTextEditor;
 	let tree: any;
 	if (editor) {
-		// Get the source code of the active file
 		const sourceCode = editor.document.getText();
-	
-		// Parse the source code using the Tree-sitter parser
 		tree = parser.parse(sourceCode);
-	} 
+	}
+
 
 	disposable = vscode.workspace.onDidChangeTextDocument(e => {
-		
-		console.log(tree);
-		
-		console.log(e);
-		
+
+		// console.log(tree);
+
+
 		// далее надо оформить сюда обновлениедерева при изменении дока
 
+		const content = e.document.getText();
 
-		
-		// if (editor && e.document === editor.document) {
-		// 	// Update the syntax tree using tree.edit
-		// 	tree.edit(edit => {
-		// 		// Apply the changes to the syntax tree
-		// 		for (const change of e.contentChanges) {
-		// 			edit.replace({
-		// 				start: tree.rootNode.positionAt(change.rangeOffset),
-		// 				oldEnd: tree.rootNode.positionAt(change.rangeOffset + change.rangeLength),
-		// 				newEnd: tree.rootNode.positionAt(change.rangeOffset + change.text.length),
-		// 			}, change.text);
-		// 		}
-		// 	});
+		// Use tree.edit to update the syntax tree based on document changes
+		e.contentChanges.forEach(change => {
+			tree.edit({
+				startIndex: change.rangeOffset,
+				oldEndIndex: change.rangeOffset + change.rangeLength,
+				newEndIndex: change.rangeOffset + change.text.length,
+				startPosition: editor?.document.positionAt(change.rangeOffset),
+				oldEndPosition: editor?.document.positionAt(change.rangeOffset + change.rangeLength),
+				newEndPosition: editor?.document.positionAt(change.rangeOffset + change.text.length),
+			});
+		});
+
+
+		// Update the syntax tree with the modified content
+		tree = parser.parse(content, tree);
+
+		// console.log(e.contentChanges);
+
+		// console.log(tree.rootNode.toString());
+
+		// console.log(e);
+		// console.log(e.contentChanges.length);
+		// console.log(e.contentChanges[0].text.length);
+
+		// проверка что это перенос строки + пробелы
+		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text)) {
+
+			const position = editor?.selection.active;
+
+			const currentNode = tree.rootNode.descendantForPosition({
+				row: position?.line,
+				column: position?.character
+			});
+
+			console.log(currentNode);
 			
-		// 	// Log the updated syntax tree
-		// 	console.log(tree.rootNode.toString());
-		// }
-	
+
+			// console.log(currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"') && editor && position);
+			// console.log('currentNode.typeId === 100', currentNode.typeId === 100);
+			// console.log('(currentNode.text ===  || currentNode.text === ', (currentNode.text === "'" || currentNode.text === '"'));
+			// console.log('editor', editor);
+			// console.log('position', position);
+
+			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"') && editor && position) {
+				const edit = new vscode.WorkspaceEdit();
+				edit.replace(editor.document.uri, new vscode.Range(position, position), currentNode.text
+					+ " + \n" + " ".repeat(currentNode.parent.parent.firstChild.startPosition.column)
+					+ currentNode.text);
+				vscode.workspace.applyEdit(edit);
+			}
+
+
+
+		}
+
+
+
 		// если всего один символ добавили
 		if (e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1) {
-			
 
 			// const editor = vscode.window.activeTextEditor;
 			if (editor) {
@@ -74,51 +109,35 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
 
-	// тест штука, сейчас рандомные триситтерные движения
+	// тест штука, пытаюсь сделать правильный перенос
 	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
 
-		try {
-			const editor = vscode.window.activeTextEditor;
-
-			if (editor) {
-				const sourceCode = editor.document.getText();
-
-				const tree = parser.parse(sourceCode);
-
-				console.log(tree.rootNode);
-
-				const callExpression = tree.rootNode.child(1).firstChild;
-				console.log(callExpression);
+		const position = editor?.selection.active;
 
 
-				const position = editor.selection.active;
+		const currentNode = tree.rootNode.descendantForPosition({
+			row: position?.line,
+			column: position?.character
+		});
 
-				// Get the syntax node at the cursor position
-				const nodeAtCursor = tree.rootNode.descendantForPosition({
-					row: position.line,
-					column: position.character
-				});
-			
-				// Check if a node is found at the cursor position
-				if (nodeAtCursor) {
-					// Log the type of the syntax node at the cursor position
-					console.log('Node Type at Cursor:', nodeAtCursor.type);
-				} else {
-					console.error('No syntax node found at the cursor position.');
-				}
+		if (currentNode && position) {
 
-				const isRawString = sourceCode[nodeAtCursor.startIndex] === 'r';
+			console.log(tree);
 
-				// Log the type of the string at the cursor position
-				console.log('String Type at Cursor:', isRawString ? 'Raw String' : 'Regular String');
-		
-			
+			console.log(currentNode);
+			// console.log(Math.floor(currentNode.previousSibling.startPosition.column / 4));
+
+			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"')) {
+				// console.log('я так понимаю мы можем делать умный перенос с использованием ' + currentNode.text);
+				const edit = new vscode.WorkspaceEdit();
+				edit.replace(editor.document.uri, new vscode.Range(position, position), currentNode.text
+					+ " + \n" + " ".repeat(currentNode.parent.parent.firstChild.startPosition.column)
+					+ currentNode.text);
+				vscode.workspace.applyEdit(edit);
 			}
 
-
-		} catch (error) {
-			console.log(error);
-
+		} else {
+			console.log('Не удалось найти узел для указанных координат.');
 		}
 
 	});
