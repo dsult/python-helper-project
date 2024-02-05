@@ -14,30 +14,33 @@ export async function activate(context: vscode.ExtensionContext) {
 	const Python = await Parser.Language.load(wasmPath);
 	parser.setLanguage(Python);
 
-	const editor = vscode.window.activeTextEditor;
+	let editor = vscode.window.activeTextEditor;
 	let tree: any;
 	if (editor) {
 		const sourceCode = editor.document.getText();
 		tree = parser.parse(sourceCode);
-
-
 	}
 
 
-	
+	vscode.window.onDidChangeActiveTextEditor(e => {
+		editor = vscode.window.activeTextEditor;
 
-
+		if (editor) {
+			const sourceCode = editor.document.getText();
+			tree = parser.parse(sourceCode);
+		}
+	})
 
 	disposable = vscode.workspace.onDidChangeTextDocument(e => {
+		// if (e.contentChanges[0].rangeLength > 0) {
+		// 	return
+		// }
 
-		if (e.contentChanges[0].rangeLength > 0) {
-			return
-		}
+		let position = vscode.window.activeTextEditor?.selection.active;
 
 		// проверка что это перенос строки + пробелы
-		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text)) {
+		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text) && editor && position && e.contentChanges[0].rangeLength == 0) {
 
-			let position = vscode.window.activeTextEditor?.selection.active;
 
 
 			const currentNode = tree.rootNode.descendantForPosition({
@@ -45,24 +48,31 @@ export async function activate(context: vscode.ExtensionContext) {
 				column: position?.character
 			});
 
-			// console.log(currentNode);
 
 			// если мы в ноде-кавычке, то есть это пока работает на последнем символе строки
-			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"') && editor && position) {
+			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"')) {
 
-				const edit = new vscode.WorkspaceEdit();
-				edit.replace(editor.document.uri, new vscode.Range(position, position), currentNode.text
-					+ " +\n" + " ".repeat(currentNode.parent.firstChild.startPosition.column)
-					+ currentNode.text);
-				vscode.workspace.applyEdit(edit);
+				const ofs1 = editor.document.offsetAt(position)
+				const ofs2 = ofs1 + e.contentChanges[0].text.length
+				const pos1 = position;
+				const pos2 = editor.document.positionAt(ofs2);
 
-				// console.log(e.contentChanges[0].text.length / 4);
+				editor.edit(editBuilder => {
+					editBuilder.replace(new vscode.Range(pos1, pos2), currentNode.text + " +\n" + " ".repeat(currentNode.parent.firstChild.startPosition.column) + currentNode.text);
+				}, { undoStopAfter: false, undoStopBefore: false });
 
-				// удаление отступов которые ставит vscode (пока непонятно как подругому фиксить)
-				for (let i = 0; i < e.contentChanges[0].text.length / 4; i++) {
-					vscode.commands.executeCommand('deleteLeft');
-				}
 			}
+
+			// // если мы внутри строки
+			// if (currentNode.typeId === 200) {
+			// 	// const strType = currentNode.text.slice(0, 3);
+			// 	console.log(currentNode.text.slice(0, 3));
+
+			// }
+
+
+
+
 		}
 
 		const content = e.document.getText();
@@ -102,17 +112,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// все, внизу ничего интересного 
 	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
-		if (editor) {
-
-			let position = vscode.window.activeTextEditor?.selection.active;
-
+		let position = vscode.window.activeTextEditor?.selection.active;
+		if (editor && position) {
 
 			const currentNode = tree.rootNode.descendantForPosition({
 				row: position?.line,
 				column: position?.character
 			});
 
+			console.log(currentNode.text);
 			console.log(currentNode);
+			console.log(tree.rootNode.text)
+			console.log(tree.rootNode.hasError())
 		}
 
 	});
