@@ -13,6 +13,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const wasmPath = path.join(__dirname, 'lib/tree-sitter-python.wasm');
 	const Python = await Parser.Language.load(wasmPath);
 	parser.setLanguage(Python);
+	console.log(Python);
 
 	let editor = vscode.window.activeTextEditor;
 	let tree: any;
@@ -20,6 +21,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		const sourceCode = editor.document.getText();
 		tree = parser.parse(sourceCode);
 	}
+
 
 
 	vscode.window.onDidChangeActiveTextEditor(e => {
@@ -41,16 +43,51 @@ export async function activate(context: vscode.ExtensionContext) {
 		// проверка что это перенос строки + пробелы
 		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text) && editor && position && e.contentChanges[0].rangeLength == 0) {
 
+			// const isQuote = (text: string): boolean => ["'", '"'].includes(text);
+
+			const isQuote = (text: string): boolean => ["'", '"', "f'", 'f"', "r'", 'r"'].includes(text);
+			const isRFQuote = (text: string): boolean => ["f'", 'f"', "r'", 'r"'].includes(text);
+
+			const isCursorAfterRF = (node: any, position: vscode.Position): boolean => {
+				// Check if the node has an 'f' or 'r' prefix
+				if (isRFQuote(node.text)) {
+					// Check if the cursor is at that position
+					return position.character === node.startPosition.column + 1
+						&& node.parent.startPosition.row === position.line;
+				}
+				return false;
+			};
+
+			console.log(position.character);
 
 
 			const currentNode = tree.rootNode.descendantForPosition({
 				row: position?.line,
 				column: position?.character
 			});
+			console.log(isCursorAfterRF(currentNode, position));
+
+			if (
+				(
+					currentNode.typeId === 100
+					&& isQuote(currentNode.parent.firstChild.text)
+					&& !(
+						currentNode.parent.startPosition.row === position.line
+						&& currentNode.parent.startPosition.column === position.character
+					)
+					&& !isCursorAfterRF(currentNode, position)
+				) || (
+					currentNode.typeId === 200
+					&& isQuote(currentNode.firstChild.text)
+				)
+			) {
 
 
-			// если мы в ноде-кавычке, то есть это пока работает на последнем символе строки
-			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"')) {
+
+				const quoteText = currentNode.typeId === 100 ? currentNode.parent.firstChild.text : currentNode.firstChild.text;
+				const quoteText2 = currentNode.typeId === 100 ? currentNode.parent.lastChild.text : currentNode.lastChild.text;
+
+				const columnOffset = currentNode.typeId === 100 ? currentNode.parent.firstChild.startPosition.column : currentNode.firstChild.startPosition.column;
 
 				const ofs1 = editor.document.offsetAt(position)
 				const ofs2 = ofs1 + e.contentChanges[0].text.length
@@ -58,20 +95,10 @@ export async function activate(context: vscode.ExtensionContext) {
 				const pos2 = editor.document.positionAt(ofs2);
 
 				editor.edit(editBuilder => {
-					editBuilder.replace(new vscode.Range(pos1, pos2), currentNode.text + " +\n" + " ".repeat(currentNode.parent.firstChild.startPosition.column) + currentNode.text);
+					editBuilder.replace(new vscode.Range(pos1, pos2), quoteText2 + "\n" + " ".repeat(columnOffset) + quoteText);
 				}, { undoStopAfter: false, undoStopBefore: false });
 
 			}
-
-			// // если мы внутри строки
-			// if (currentNode.typeId === 200) {
-			// 	// const strType = currentNode.text.slice(0, 3);
-			// 	console.log(currentNode.text.slice(0, 3));
-
-			// }
-
-
-
 
 		}
 
@@ -91,21 +118,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 		tree = parser.parse(content, tree);
 
-
-		// если всего один символ добавили
-		if (e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1) {
-
-			if (editor) {
-				const position = editor.selection.active;
-
-				const text = editor.document.getText(new vscode.Range(position.translate(0, -4), position.translate(0, 1)));
-				if (text === 'Hello') {
-					const edit = new vscode.WorkspaceEdit();
-					edit.replace(editor.document.uri, new vscode.Range(position.translate(0, 1), position.translate(0, 1)), ", word!1!");
-					vscode.workspace.applyEdit(edit);
-				}
-			}
-		}
 	});
 	context.subscriptions.push(disposable);
 
@@ -120,10 +132,7 @@ export async function activate(context: vscode.ExtensionContext) {
 				column: position?.character
 			});
 
-			console.log(currentNode.text);
 			console.log(currentNode);
-			console.log(tree.rootNode.text)
-			console.log(tree.rootNode.hasError())
 		}
 
 	});
