@@ -13,8 +13,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	const wasmPath = path.join(__dirname, 'lib/tree-sitter-python.wasm');
 	const Python = await Parser.Language.load(wasmPath);
 	parser.setLanguage(Python);
+	console.log(Python);
 
-	const editor = vscode.window.activeTextEditor;
+	let editor = vscode.window.activeTextEditor;
 	let tree: any;
 	if (editor) {
 		const sourceCode = editor.document.getText();
@@ -22,16 +23,88 @@ export async function activate(context: vscode.ExtensionContext) {
 	}
 
 
+
+	vscode.window.onDidChangeActiveTextEditor(e => {
+		editor = vscode.window.activeTextEditor;
+
+		if (editor) {
+			const sourceCode = editor.document.getText();
+			tree = parser.parse(sourceCode);
+		}
+	})
+
 	disposable = vscode.workspace.onDidChangeTextDocument(e => {
+		// if (e.contentChanges[0].rangeLength > 0) {
+		// 	return
+		// }
 
-		// console.log(tree);
+		let position = vscode.window.activeTextEditor?.selection.active;
+
+		// проверка что это перенос строки + пробелы
+		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text) && editor && position && e.contentChanges[0].rangeLength == 0) {
+
+			// const isQuote = (text: string): boolean => ["'", '"'].includes(text);
+
+			const isQuote = (text: string): boolean => ["'", '"', "f'", 'f"', "r'", 'r"'].includes(text);
+			const isRFQuote = (text: string): boolean => ["f'", 'f"', "r'", 'r"'].includes(text);
+
+			const isCursorAfterRF = (node: any, position: vscode.Position): boolean => {
+				// Check if the node has an 'f' or 'r' prefix
+				if (isRFQuote(node.text)) {
+					// Check if the cursor is at that position
+					return position.character === node.startPosition.column + 1
+						&& node.parent.startPosition.row === position.line;
+				}
+				return false;
+			};
+
+			console.log(position.character);
 
 
-		// далее надо оформить сюда обновлениедерева при изменении дока
+			const currentNode = tree.rootNode.descendantForPosition({
+				row: position?.line,
+				column: position?.character
+			});
+			console.log(isCursorAfterRF(currentNode, position));
+
+			if (
+				(
+					currentNode.typeId === 100
+					&& isQuote(currentNode.parent.firstChild.text)
+					&& !(
+						currentNode.parent.startPosition.row === position.line
+						&& currentNode.parent.startPosition.column === position.character
+					)
+					&& !isCursorAfterRF(currentNode, position)
+				) || (
+					currentNode.typeId === 200
+					&& isQuote(currentNode.firstChild.text)
+				)
+			) {
+
+
+
+				const quoteText = currentNode.typeId === 100 ? currentNode.parent.firstChild.text : currentNode.firstChild.text;
+				const quoteText2 = currentNode.typeId === 100 ? currentNode.parent.lastChild.text : currentNode.lastChild.text;
+
+				const columnOffset = currentNode.typeId === 100 ? currentNode.parent.firstChild.startPosition.column : currentNode.firstChild.startPosition.column;
+
+				const ofs1 = editor.document.offsetAt(position)
+				const ofs2 = ofs1 + e.contentChanges[0].text.length
+				const pos1 = position;
+				const pos2 = editor.document.positionAt(ofs2);
+
+				editor.edit(editBuilder => {
+					editBuilder.replace(new vscode.Range(pos1, pos2), quoteText2 + "\n" + " ".repeat(columnOffset) + quoteText);
+				}, { undoStopAfter: false, undoStopBefore: false });
+
+			}
+
+		}
 
 		const content = e.document.getText();
 
-		// Use tree.edit to update the syntax tree based on document changes
+		// инкриментальное обновление дерева
 		e.contentChanges.forEach(change => {
 			tree.edit({
 				startIndex: change.rangeOffset,
@@ -43,22 +116,16 @@ export async function activate(context: vscode.ExtensionContext) {
 			});
 		});
 
-
-		// Update the syntax tree with the modified content
 		tree = parser.parse(content, tree);
 
-		// console.log(e.contentChanges);
+	});
+	context.subscriptions.push(disposable);
 
-		// console.log(tree.rootNode.toString());
 
-		// console.log(e);
-		// console.log(e.contentChanges.length);
-		// console.log(e.contentChanges[0].text.length);
-
-		// проверка что это перенос строки + пробелы
-		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text)) {
-
-			const position = editor?.selection.active;
+	// все, внизу ничего интересного 
+	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
+		let position = vscode.window.activeTextEditor?.selection.active;
+		if (editor && position) {
 
 			const currentNode = tree.rootNode.descendantForPosition({
 				row: position?.line,
@@ -66,78 +133,6 @@ export async function activate(context: vscode.ExtensionContext) {
 			});
 
 			console.log(currentNode);
-			
-
-			// console.log(currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"') && editor && position);
-			// console.log('currentNode.typeId === 100', currentNode.typeId === 100);
-			// console.log('(currentNode.text ===  || currentNode.text === ', (currentNode.text === "'" || currentNode.text === '"'));
-			// console.log('editor', editor);
-			// console.log('position', position);
-
-			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"') && editor && position) {
-				const edit = new vscode.WorkspaceEdit();
-				edit.replace(editor.document.uri, new vscode.Range(position, position), currentNode.text
-					+ " + \n" + " ".repeat(currentNode.parent.parent.firstChild.startPosition.column)
-					+ currentNode.text);
-				vscode.workspace.applyEdit(edit);
-			}
-
-
-
-		}
-
-
-
-		// если всего один символ добавили
-		if (e.contentChanges.length === 1 && e.contentChanges[0].text.length === 1) {
-
-			// const editor = vscode.window.activeTextEditor;
-			if (editor) {
-				const position = editor.selection.active;
-
-				const text = editor.document.getText(new vscode.Range(position.translate(0, -4), position.translate(0, 1)));
-				// console.log(`Word to the left of the cursor: ${text}`);
-				if (text === 'Hello') {
-					const edit = new vscode.WorkspaceEdit();
-					edit.replace(editor.document.uri, new vscode.Range(position.translate(0, 1), position.translate(0, 1)), ", word!1!");
-					vscode.workspace.applyEdit(edit);
-				}
-			}
-		}
-	});
-	context.subscriptions.push(disposable);
-
-
-
-	// тест штука, пытаюсь сделать правильный перенос
-	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
-
-		const position = editor?.selection.active;
-
-
-		const currentNode = tree.rootNode.descendantForPosition({
-			row: position?.line,
-			column: position?.character
-		});
-
-		if (currentNode && position) {
-
-			console.log(tree);
-
-			console.log(currentNode);
-			// console.log(Math.floor(currentNode.previousSibling.startPosition.column / 4));
-
-			if (currentNode.typeId === 100 && (currentNode.text === "'" || currentNode.text === '"')) {
-				// console.log('я так понимаю мы можем делать умный перенос с использованием ' + currentNode.text);
-				const edit = new vscode.WorkspaceEdit();
-				edit.replace(editor.document.uri, new vscode.Range(position, position), currentNode.text
-					+ " + \n" + " ".repeat(currentNode.parent.parent.firstChild.startPosition.column)
-					+ currentNode.text);
-				vscode.workspace.applyEdit(edit);
-			}
-
-		} else {
-			console.log('Не удалось найти узел для указанных координат.');
 		}
 
 	});
