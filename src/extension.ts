@@ -13,7 +13,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	const wasmPath = path.join(__dirname, 'lib/tree-sitter-python.wasm');
 	const Python = await Parser.Language.load(wasmPath);
 	parser.setLanguage(Python);
-	console.log(Python);
 
 	let editor = vscode.window.activeTextEditor;
 	let tree: any;
@@ -33,20 +32,16 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	})
 
+	const isQuote = (text: string): boolean => ["'", '"', "f'", 'f"', "r'", 'r"'].includes(text);
+	const isRFQuote = (text: string): boolean => ["f'", 'f"', "r'", 'r"'].includes(text);
+	const isFQuote = (text: string): boolean => ["f'", 'f"'].includes(text);
+
 	disposable = vscode.workspace.onDidChangeTextDocument(e => {
-		// if (e.contentChanges[0].rangeLength > 0) {
-		// 	return
-		// }
 
 		let position = vscode.window.activeTextEditor?.selection.active;
 
 		// проверка что это перенос строки + пробелы
 		if (e.contentChanges.length === 1 && /^\r\n(\s)*$/.test(e.contentChanges[0].text) && editor && position && e.contentChanges[0].rangeLength == 0) {
-
-			// const isQuote = (text: string): boolean => ["'", '"'].includes(text);
-
-			const isQuote = (text: string): boolean => ["'", '"', "f'", 'f"', "r'", 'r"'].includes(text);
-			const isRFQuote = (text: string): boolean => ["f'", 'f"', "r'", 'r"'].includes(text);
 
 			const isCursorAfterRF = (node: any, position: vscode.Position): boolean => {
 				// Check if the node has an 'f' or 'r' prefix
@@ -57,18 +52,20 @@ export async function activate(context: vscode.ExtensionContext) {
 				}
 				return false;
 			};
-
-			console.log(position.character);
-
+			const isCursorAtSecondPos = (node: any, position: vscode.Position): boolean => {
+				// Проверяем, что позиция курсора равна начальной позиции узла плюс один символ
+				return position.character === node.startPosition.column + 1
+					&& position.line === node.startPosition.row;
+			};
 
 			const currentNode = tree.rootNode.descendantForPosition({
 				row: position?.line,
 				column: position?.character
 			});
-			console.log(isCursorAfterRF(currentNode, position));
 
 			if (
 				(
+					// нода кавычка
 					currentNode.typeId === 100
 					&& isQuote(currentNode.parent.firstChild.text)
 					&& !(
@@ -77,30 +74,56 @@ export async function activate(context: vscode.ExtensionContext) {
 					)
 					&& !isCursorAfterRF(currentNode, position)
 				) || (
+					// нода строка
 					currentNode.typeId === 200
 					&& isQuote(currentNode.firstChild.text)
+				) || (
+					// нода фигурная скобка
+					currentNode.typeId === 82
+					&& isFQuote(currentNode?.parent?.parent?.firstChild.text)
+				) || (
+					// нода спец знак
+					currentNode.typeId === 86
+					&& isQuote(currentNode?.parent?.firstChild.text)
+					&& !isCursorAtSecondPos(currentNode, position)
 				)
 			) {
 
+				let stringtNode;
 
-
-				const quoteText = currentNode.typeId === 100 ? currentNode.parent.firstChild.text : currentNode.firstChild.text;
-				const quoteText2 = currentNode.typeId === 100 ? currentNode.parent.lastChild.text : currentNode.lastChild.text;
-
-				const columnOffset = currentNode.typeId === 100 ? currentNode.parent.firstChild.startPosition.column : currentNode.firstChild.startPosition.column;
+				switch (currentNode.typeId) {
+					case 200:
+						stringtNode = currentNode
+						break;
+					case 100:
+					case 86:
+						stringtNode = currentNode.parent
+						break;
+					case 82:
+						stringtNode = currentNode.parent.parent
+						break;
+					default:
+						break;
+				}
 
 				const ofs1 = editor.document.offsetAt(position)
 				const ofs2 = ofs1 + e.contentChanges[0].text.length
 				const pos1 = position;
 				const pos2 = editor.document.positionAt(ofs2);
 
+				const openQuoteText = stringtNode.firstChild.text;
+				const closeQuoteText = stringtNode.lastChild.text;
+				const columnOffset = stringtNode.firstChild.startPosition.column;
+
 				editor.edit(editBuilder => {
-					editBuilder.replace(new vscode.Range(pos1, pos2), quoteText2 + "\n" + " ".repeat(columnOffset) + quoteText);
+					editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
 				}, { undoStopAfter: false, undoStopBefore: false });
 
 			}
 
 		}
+
+
 
 		const content = e.document.getText();
 
@@ -132,7 +155,11 @@ export async function activate(context: vscode.ExtensionContext) {
 				column: position?.character
 			});
 
-			console.log(currentNode);
+			console.log({
+				'nodeId': currentNode.typeId,
+				'parentId': currentNode?.parent?.typeId,
+			})
+
 		}
 
 	});
