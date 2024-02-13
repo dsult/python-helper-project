@@ -15,12 +15,12 @@ export class StringSeparator implements ITypingAssist {
 
 		let position = vscode.window.activeTextEditor?.selection.active;
 
-		// проверка что это перенос строки + пробелы
 		const currentNode = tree.rootNode.descendantForPosition({
 			row: position?.line,
 			column: position?.character
 		});
-
+		
+		// проверка что это перенос строки + пробелы
 		return !!((
 			changeEvent.contentChanges.length === 1
 			&& editor
