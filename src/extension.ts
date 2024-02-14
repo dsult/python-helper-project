@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { StringSeparator } from './typing_assist/completer/StringSeparator';
-import { HalloWordCompleter } from './typing_assist/completer/HalloWordTypingAssist';
 import { TypeAssistService } from './typing_assist/TypeAssistService';
 import { DocstringCompliter } from './typing_assist/completer/DocstringCompliter';
 
@@ -11,7 +10,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	const assistService = new TypeAssistService([
 		new StringSeparator(),
-		new HalloWordCompleter(),
 		new DocstringCompliter(),
 	]);
 
@@ -27,12 +25,16 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// отладочная штука 
 	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
-		console.log(assistService);
+		// console.log(assistService);
 
 		// vscode.commands.executeCommand("editor.action.insertSnippet", {
 		// 	"snippet": "print(${1:bla})$0"
 		// })
 
+
+        // assistService.updateTree()
+        // console.log(assistService.tree.rootNode.text);
+        
 		let position = assistService.editor?.selection.active;
 		const currentNode = assistService.tree.rootNode.descendantForPosition({
 			row: position?.line,
@@ -40,8 +42,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		});
 
 		console.log(currentNode);
-		console.log(currentNode.parent.parent.parent.parent);
-		console.log(currentNode.parent.parent.parent.parent.firstChild.text);
+		console.log(currentNode.type);
+		// console.log(currentNode.parent.parent.parent.parent);
+		// console.log(currentNode.parent.parent.parent.parent.firstChild.text);
 		// console.log("parent type: " + currentNode.parent?.type);
 		// console.log("parent text: " + currentNode.parent?.text);
 		// console.log(assistService.tree.rootNode.text);

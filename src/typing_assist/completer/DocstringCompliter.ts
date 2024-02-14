@@ -10,7 +10,7 @@ export class DocstringCompliter implements ITypingAssist {
 
     isApplicable(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): Boolean {
 
-        let position = vscode.window.activeTextEditor?.selection.active;
+        let position = editor?.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
             row: position?.line,
@@ -34,23 +34,92 @@ export class DocstringCompliter implements ITypingAssist {
                 currentNode.typeId === this.QUOTE_NODE_ID
                 && this.isEmptyTripleQuoteString(currentNode.parent.text)
                 && this.isCursorInMiddle(currentNode.parent, position)
-                && currentNode.parent?.parent?.parent?.parent?.firstChild.text == "def"
+                && currentNode.parent?.parent?.parent?.parent.type == "function_definition"
+                // (может ли тут быть обращение к несуществующему элементу???)
+                && currentNode.parent.parent.parent.parent.children[2].type == "parameters"
             )
     }
 
     apply(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): void {
 
-        console.log("Мы внутри докстринга все норм(???)");
-        let snippet = '$0'
+        let position = editor?.selection.active;
+
+        const currentNode = tree.rootNode.descendantForPosition({
+            row: position?.line,
+            column: position?.character
+        });
 
 
-        snippet += '\n\nParameters$2\n----------\n$1'
-        // console.log(snippet);
-        
-        vscode.commands.executeCommand("editor.action.insertSnippet", {
-            "snippet": snippet
-        })
-        // "\nprint(${1:bla})\n$0\n"
+        // editor.selection = new vscode.Selection(position, position);
+        // // console.log(position.character / 4);
+
+        // editor.edit(editBuilder => {
+        //     editBuilder.insert(editor.selection.active, "\n");
+        // }, { undoStopAfter: false, undoStopBefore: false });
+
+        const parameters = currentNode.parent.parent.parent.parent.children[2].children
+
+        let cursorCounter = 1;
+        let snippet = '$0\n\n'
+
+        if (
+            parameters.length > 2
+
+        ) {
+
+            snippet += 'Parameters\n----------\n'
+
+            
+            
+            // parameters.forEach((e: any)=> console.log(e.text + " " + e.type))
+           
+            
+            for (let i = 0; i < parameters.length; i++) {
+                const parameterNode = parameters[i];
+
+                switch (parameterNode.type) {
+                    case "identifier":
+                        snippet += parameterNode.text + ": Any\n"
+                        snippet += "\t$" + cursorCounter + "\n"
+                        cursorCounter++;
+                        break;
+
+                    case "typed_default_parameter":
+                    case "typed_parameter":
+                        snippet += parameterNode.text + "\n"
+                        snippet += "\t$" + cursorCounter + "\n"
+                        cursorCounter++;
+                        break;
+
+                    case "list_splat_pattern":
+                        snippet += parameterNode.text + ": iterable\n"
+                        snippet += "\t$" + cursorCounter + "\n"
+                        cursorCounter++;
+                        break;
+                        
+                    case "default_parameter":
+                        snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n"
+                        snippet += "\t$" + cursorCounter + "\n"
+                        cursorCounter++;
+                        break;
+                    
+                    case "dictionary_splat_pattern":
+                        snippet += parameterNode.text + ": dict\n"
+                        snippet += "\t$" + cursorCounter + "\n"
+                        cursorCounter++;
+                        break;
+
+                    default:
+                        console.log(parameterNode.type);
+
+                        break;
+                }
+            }
+        }
+
+        snippet += '\nReturns\n-------\n${' + cursorCounter + ":None}\n"
+
+        vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
     }
 
     isEmptyTripleQuoteString = (text: string): boolean => ["''''''", '""""""'].includes(text);
