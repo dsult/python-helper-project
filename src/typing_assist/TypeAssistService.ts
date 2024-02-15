@@ -55,9 +55,11 @@ export class TypeAssistService {
 	 * инкриментальное обновление дерева
 	 */
 	updateTree(e: vscode.TextDocumentChangeEvent) {
-
-		const content = e.document.getText();
+        
+        const content = e.document.getText();
 		e.contentChanges.forEach(change => {
+            // console.log(this.tree.hasEr);
+            
 			this.tree.edit({
 				startIndex: change.rangeOffset,
 				oldEndIndex: change.rangeOffset + change.rangeLength,
