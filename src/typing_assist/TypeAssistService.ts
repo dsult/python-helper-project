@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ITypingAssist } from "./types";
+import { Context, ITypingAssist } from "./types";
 
 export class TypeAssistService {
 	assistList: ITypingAssist[];
@@ -78,9 +78,17 @@ export class TypeAssistService {
 	 */
 	processing(changeEvent: vscode.TextDocumentChangeEvent): void {
 		if (this.editor) {
+
+            const context: Context = {
+                tree: this.tree,
+                editor: this.editor,
+                changeEvent: changeEvent,
+                parser: this.parser,
+            };
+
 			for (const assist of this.assistList) {
-				if (assist.isApplicable(this.tree, this.editor, changeEvent)) {
-					assist.apply(this.tree, this.editor, changeEvent);
+				if (assist.isApplicable(context)) {
+					assist.apply(context);
 					break;
 				}
 			}

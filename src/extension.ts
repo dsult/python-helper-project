@@ -1,56 +1,56 @@
 import * as vscode from 'vscode';
 import { StringSeparator } from './typing_assist/completer/StringSeparator';
 import { TypeAssistService } from './typing_assist/TypeAssistService';
-import { DocstringCompliter } from './typing_assist/completer/DocstringCompliter';
+import { DocstringCompleter } from './typing_assist/completer/DocstringCompleter';
+import { FunctionCompleter } from './typing_assist/completer/FunctionCompleter';
 
 
 let disposable: vscode.Disposable | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
 
-	const assistService = new TypeAssistService([
-		new StringSeparator(),
-		new DocstringCompliter(),
-	]);
+    const assistService = new TypeAssistService([
+        new StringSeparator(),
+        new DocstringCompleter(),
+        new FunctionCompleter(),
+    ]);
 
-	vscode.window.onDidChangeActiveTextEditor(e => assistService.changeDoc(e));
+    vscode.window.onDidChangeActiveTextEditor(e => assistService.changeDoc(e));
 
-	disposable = vscode.workspace.onDidChangeTextDocument(e => {
-		assistService.processing(e);
-		assistService.updateTree(e);
-	});
+    disposable = vscode.workspace.onDidChangeTextDocument(e => {
+        assistService.processing(e);
+        assistService.updateTree(e);
+    });
 
-	context.subscriptions.push(disposable);
-
-
-	// отладочная штука 
-	disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
-		// console.log(assistService);
-
-		// vscode.commands.executeCommand("editor.action.insertSnippet", {
-		// 	"snippet": "print(${1:bla})$0"
-		// })
+    context.subscriptions.push(disposable);
 
 
-        // assistService.updateTree()
+    // отладочная штука 
+    disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
+
+        let position = assistService.editor?.selection.active;
+        // const currentNode = assistService.tree.rootNode.descendantForPosition({
+        //     row: position?.line,
+        //     column: position?.character,
+        // });
+
         // console.log(assistService.tree.rootNode.text);
-        
-		let position = assistService.editor?.selection.active;
-		const currentNode = assistService.tree.rootNode.descendantForPosition({
-			row: position?.line,
-			column: position?.character,
-		});
+        // console.log(assistService.tree.rootNode.toString());
 
-		console.log(currentNode);
-		console.log(currentNode.type);
-		// console.log(currentNode.parent.parent.parent.parent);
-		// console.log(currentNode.parent.parent.parent.parent.firstChild.text);
-		// console.log("parent type: " + currentNode.parent?.type);
-		// console.log("parent text: " + currentNode.parent?.text);
-		// console.log(assistService.tree.rootNode.text);
-		
-	});
-	context.subscriptions.push(disposable);
+        // console.log(currentNode);
+        // console.log(currentNode.type);
+
+        const doc = vscode.window.activeTextEditor?.document;
+
+        const edit = new vscode.WorkspaceEdit();
+
+        edit.set(doc!.uri, [
+            vscode.SnippetTextEdit.insert(new vscode.Position(position!.line, position!.character), new vscode.SnippetString('hello ${1:world}')),
+        ]);
+
+        vscode.workspace.applyEdit(edit);
+    });
+    context.subscriptions.push(disposable);
 }
 
 export function deactivate() { }

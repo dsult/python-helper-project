@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { ITypingAssist } from "../types";
-import { log } from 'console';
+import { Context, ITypingAssist } from "../types";
 
 
 /**
@@ -12,8 +11,10 @@ export class StringSeparator implements ITypingAssist {
 	readonly SPECIAL_CHARACTER_NODE_ID = 86;
 	readonly BRACE_NODE_ID = 82;
 
-	isApplicable(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): Boolean {
-
+	isApplicable(context: Context): Boolean {
+        const tree = context.tree;
+        const editor = context.editor;
+        const changeEvent = context.changeEvent;
 		let position = vscode.window.activeTextEditor?.selection.active;
 
 		const currentNode = tree.rootNode.descendantForPosition({
@@ -54,10 +55,11 @@ export class StringSeparator implements ITypingAssist {
 				)
 			))
 	}
-	apply(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): void {
-
+	apply(context: Context): void {
+        const tree = context.tree;
+        const editor = context.editor;
+        const changeEvent = context.changeEvent;
 		let position = vscode.window.activeTextEditor?.selection.active;
-		console.log(position);
 		
 		const currentNode = tree.rootNode.descendantForPosition({
 			row: position?.line,
@@ -119,8 +121,6 @@ export class StringSeparator implements ITypingAssist {
 
 			editor.edit(editBuilder => {
 				editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
-
-
 			}, { undoStopAfter: false, undoStopBefore: false });
 		}
 	}

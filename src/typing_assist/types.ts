@@ -5,9 +5,17 @@ export interface ITypingAssist {
 	/**
 	 * Определяет, можно ли применить этот ассист к changeEvent
 	 */
-	isApplicable(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): Boolean;
+	isApplicable(context: Context): Boolean;
 	/**
 	 * Изменяет код
 	 */
-	apply(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): void;
+	apply(context: Context): void;
 }
+
+export interface Context {
+    tree: any;
+    editor: vscode.TextEditor;
+    changeEvent: vscode.TextDocumentChangeEvent;
+    parser: any;
+}
+

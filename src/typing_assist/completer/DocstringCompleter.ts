@@ -1,15 +1,18 @@
 import * as vscode from 'vscode';
-import { ITypingAssist } from "../types";
+import { Context, ITypingAssist } from "../types";
 
 
 /**
  * Автоматическая док строка (для функций)
  */
-export class DocstringCompliter implements ITypingAssist {
+export class DocstringCompleter implements ITypingAssist {
     readonly QUOTE_NODE_ID = 100;
 
-    isApplicable(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): Boolean {
-
+    isApplicable(context: Context): Boolean {
+        const tree = context.tree;
+        const editor = context.editor;
+        const changeEvent = context.changeEvent;
+        
         let position = editor?.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
@@ -40,8 +43,11 @@ export class DocstringCompliter implements ITypingAssist {
             )
     }
 
-    apply(tree: any, editor: vscode.TextEditor, changeEvent: vscode.TextDocumentChangeEvent): void {
-
+    apply(context: Context): void {
+        const tree = context.tree;
+        const editor = context.editor;
+        const changeEvent = context.changeEvent;
+        
         let position = editor?.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
@@ -49,31 +55,26 @@ export class DocstringCompliter implements ITypingAssist {
             column: position?.character
         });
 
+        // const parameters1 = currentNode.parent.parent.parent.parent.children[2].children
+        // const namedParameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
+        // parameters1.forEach((e: any) => console.log(e.text + " " + e.type))
+        // console.log("named");
 
-        // editor.selection = new vscode.Selection(position, position);
-        // // console.log(position.character / 4);
+        // namedParameters.forEach((e: any) => console.log(e.text + " " + e.type))
+        // console.log("end named");
 
-        // editor.edit(editBuilder => {
-        //     editBuilder.insert(editor.selection.active, "\n");
-        // }, { undoStopAfter: false, undoStopBefore: false });
-
-        const parameters = currentNode.parent.parent.parent.parent.children[2].children
+        const parameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
 
         let cursorCounter = 1;
         let snippet = '$0\n\n'
 
-        if (
-            parameters.length > 2
-
-        ) {
+        if (parameters.length > 0) {
 
             snippet += 'Parameters\n----------\n'
 
-            
-            
-            // parameters.forEach((e: any)=> console.log(e.text + " " + e.type))
-           
-            
+
+
+
             for (let i = 0; i < parameters.length; i++) {
                 const parameterNode = parameters[i];
 
@@ -96,13 +97,13 @@ export class DocstringCompliter implements ITypingAssist {
                         snippet += "\t$" + cursorCounter + "\n"
                         cursorCounter++;
                         break;
-                        
+
                     case "default_parameter":
                         snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n"
                         snippet += "\t$" + cursorCounter + "\n"
                         cursorCounter++;
                         break;
-                    
+
                     case "dictionary_splat_pattern":
                         snippet += parameterNode.text + ": dict\n"
                         snippet += "\t$" + cursorCounter + "\n"
@@ -110,8 +111,6 @@ export class DocstringCompliter implements ITypingAssist {
                         break;
 
                     default:
-                        console.log(parameterNode.type);
-
                         break;
                 }
             }
