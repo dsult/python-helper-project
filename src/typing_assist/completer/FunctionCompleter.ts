@@ -23,7 +23,7 @@ export class FunctionCompleter implements ITypingAssist {
         ) {
             return false;
         }
-        console.log(changeEvent);
+        // console.log(changeEvent);
 
         const content = changeEvent.document.getText();
         changeEvent.contentChanges.forEach(change => {
@@ -45,8 +45,8 @@ export class FunctionCompleter implements ITypingAssist {
             column: position?.character,
         });
 
-        console.log(tree.rootNode.text);
-        console.log(tree.rootNode.toString());
+        // console.log(tree.rootNode.text);
+        // console.log(tree.rootNode.toString());
 
         return !!(
             currentNode.parent.type === "parameters"
@@ -67,19 +67,22 @@ export class FunctionCompleter implements ITypingAssist {
             row: position?.line,
             column: position?.character,
         });
-        console.log(currentNode.parent.parent.parent.parent.type);
+        // console.log(currentNode.parent.parent.parent.parent.type);
 
-        editor.edit(editBuilder => {
-            editBuilder.replace(new vscode.Range(position, position.translate(0, 2)), "");
-        }, { undoStopAfter: true, undoStopBefore: true });
         let snippet
         if (currentNode.parent.parent.parent.type === "class_definition") {
             snippet = "(self,$1):\n\t${0:pass}"
         } else {
             snippet = "($1):\n\t${0:pass}"
         }
-        vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
-
+        // console.log("вставка сниппета");
+        
+        // vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
+        editor.insertSnippet(
+            new vscode.SnippetString(snippet),
+            new vscode.Range(position, position.translate(0, 2)),
+            // { undoStopBefore: false, undoStopAfter: false, }
+        );
 
     }
 }

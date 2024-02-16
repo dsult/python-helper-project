@@ -12,7 +12,7 @@ export class DocstringCompleter implements ITypingAssist {
         const tree = context.tree;
         const editor = context.editor;
         const changeEvent = context.changeEvent;
-        
+
         let position = editor?.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
@@ -46,8 +46,7 @@ export class DocstringCompleter implements ITypingAssist {
     apply(context: Context): void {
         const tree = context.tree;
         const editor = context.editor;
-        const changeEvent = context.changeEvent;
-        
+
         let position = editor?.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
@@ -55,13 +54,25 @@ export class DocstringCompleter implements ITypingAssist {
             column: position?.character
         });
 
-        // const parameters1 = currentNode.parent.parent.parent.parent.children[2].children
-        // const namedParameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
-        // parameters1.forEach((e: any) => console.log(e.text + " " + e.type))
-        // console.log("named");
+        editor.insertSnippet(
+            new vscode.SnippetString('\n'),
+            editor.selection.active,
+            { undoStopBefore: false, undoStopAfter: false, }
+        )
 
-        // namedParameters.forEach((e: any) => console.log(e.text + " " + e.type))
-        // console.log("end named");
+        // (async () => {
+        //     await editor.insertSnippet(
+        //         new vscode.SnippetString('some'),
+        //         editor.selection.active,
+        //         { undoStopBefore: false, undoStopAfter: false, }
+        //     )
+
+        //     await editor.insertSnippet(
+        //         new vscode.SnippetString('some2'),
+        //         editor.selection.active,
+        //         { undoStopBefore: false, undoStopAfter: false, }
+        //     )
+        // })();
 
         const parameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
 
@@ -117,7 +128,11 @@ export class DocstringCompleter implements ITypingAssist {
         }
 
         snippet += '\nReturns\n-------\n${' + cursorCounter + ":None}\n"
-
+        // editor.insertSnippet(
+        //     new vscode.SnippetString(snippet),
+        //     editor.selection.active,
+        //     // { undoStopBefore: false, undoStopAfter: false, }
+        // );
         vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
     }
 

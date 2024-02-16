@@ -117,8 +117,14 @@ export class StringSeparator implements ITypingAssist {
 
 			const openQuoteText = stringtNode.firstChild.text;
 			const closeQuoteText = stringtNode.lastChild.text;
-			const columnOffset = stringtNode.firstChild.startPosition.column;
+            
+            // editor.insertSnippet(
+            //     new vscode.SnippetString(closeQuoteText + '\n' + openQuoteText),
+            //     new vscode.Range(pos1, pos2),
+            //     { undoStopBefore: false, undoStopAfter: false, }
+            // );
 
+			const columnOffset = stringtNode.firstChild.startPosition.column;
 			editor.edit(editBuilder => {
 				editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
 			}, { undoStopAfter: false, undoStopBefore: false });

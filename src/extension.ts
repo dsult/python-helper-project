@@ -40,17 +40,37 @@ export async function activate(context: vscode.ExtensionContext) {
         // console.log(currentNode);
         // console.log(currentNode.type);
 
-        const doc = vscode.window.activeTextEditor?.document;
 
-        const edit = new vscode.WorkspaceEdit();
+        assistService.editor?.insertSnippet(
+            new vscode.SnippetString('"some snippet"'),
+            assistService.editor.selection.active,
+            { undoStopBefore: false, undoStopAfter: false, }
+        )
+        assistService.editor?.insertSnippet(
+            new vscode.SnippetString('"some snippet222"'),
+            assistService.editor.selection.active.translate(1, 0),
+            { undoStopBefore: false, undoStopAfter: false, }
+        )
+        
+        undefined
+        undefined
+        undefined
+        undefined
 
-        edit.set(doc!.uri, [
-            vscode.SnippetTextEdit.insert(new vscode.Position(position!.line, position!.character), new vscode.SnippetString('hello ${1:world}')),
-        ]);
+        // const doc = vscode.window.activeTextEditor?.document;
 
-        vscode.workspace.applyEdit(edit);
+        // const edit = new vscode.WorkspaceEdit();
+
+        // edit.set(doc!.uri, [
+        //     vscode.SnippetTextEdit.insert(new vscode.Position(position!.line, position!.character), new vscode.SnippetString('hello ${1:world}1111')),
+        // ]);
+
+        // vscode.workspace.applyEdit(edit);
     });
     context.subscriptions.push(disposable);
+
+
+    
 }
 
 export function deactivate() { }
