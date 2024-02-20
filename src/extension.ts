@@ -29,29 +29,49 @@ export async function activate(context: vscode.ExtensionContext) {
     disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
 
         let position = assistService.editor?.selection.active;
-        // const currentNode = assistService.tree.rootNode.descendantForPosition({
-        //     row: position?.line,
-        //     column: position?.character,
-        // });
+        if (assistService.tree && position) {
 
-        // console.log(assistService.tree.rootNode.text);
-        // console.log(assistService.tree.rootNode.toString());
+            const currentNode = assistService.tree.rootNode.descendantForPosition({
+                row: position?.line,
+                column: position?.character,
+            });
+            
+            console.log(assistService.tree.rootNode.text);
+            console.log(assistService.tree.rootNode.toString());
+            
+            console.log(currentNode);
+            console.log(currentNode.type);
+        }
 
-        // console.log(currentNode);
-        // console.log(currentNode.type);
 
+        // await assistService.editor?.insertSnippet(
+        //     new vscode.SnippetString('"some snippet"'),
+        //     assistService.editor.selection.active,
+        //     { undoStopBefore: false, undoStopAfter: false, }
+        // )
 
-        assistService.editor?.insertSnippet(
-            new vscode.SnippetString('"some snippet"'),
-            assistService.editor.selection.active,
-            { undoStopBefore: false, undoStopAfter: false, }
-        )
-        assistService.editor?.insertSnippet(
-            new vscode.SnippetString('"some snippet222"'),
-            assistService.editor.selection.active.translate(1, 0),
-            { undoStopBefore: false, undoStopAfter: false, }
-        )
+        // await assistService.editor?.insertSnippet(
+        //     new vscode.SnippetString('"some snippet222"'),
+        //     assistService.editor.selection.active,
+        //     { undoStopBefore: false, undoStopAfter: false, }
+        // )
         
+        // (async () => {
+        //     await assistService.editor?.insertSnippet(
+        //         new vscode.SnippetString('some'),
+        //         assistService.editor?.selection.active,
+        //         { undoStopBefore: false, undoStopAfter: false, }
+        //     )
+
+        //     await assistService.editor?.insertSnippet(
+        //         new vscode.SnippetString('some2'),
+        //         assistService.editor?.selection.active,
+        //         { undoStopBefore: false, undoStopAfter: false, }
+        //     )
+        // })();
+
+
+
         undefined
         undefined
         undefined

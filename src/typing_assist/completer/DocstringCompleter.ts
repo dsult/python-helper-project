@@ -37,9 +37,6 @@ export class DocstringCompleter implements ITypingAssist {
                 currentNode.typeId === this.QUOTE_NODE_ID
                 && this.isEmptyTripleQuoteString(currentNode.parent.text)
                 && this.isCursorInMiddle(currentNode.parent, position)
-                && currentNode.parent?.parent?.parent?.parent.type == "function_definition"
-                // (может ли тут быть обращение к несуществующему элементу???)
-                && currentNode.parent.parent.parent.parent.children[2].type == "parameters"
             )
     }
 
@@ -60,82 +57,80 @@ export class DocstringCompleter implements ITypingAssist {
             { undoStopBefore: false, undoStopAfter: false, }
         )
 
-        // (async () => {
-        //     await editor.insertSnippet(
-        //         new vscode.SnippetString('some'),
-        //         editor.selection.active,
-        //         { undoStopBefore: false, undoStopAfter: false, }
-        //     )
+        if (
+            currentNode.parent?.parent?.parent?.parent.type == "function_definition"
+            // (может ли тут быть обращение к несуществующему элементу???)
+            && currentNode.parent.parent.parent.parent.children[2].type == "parameters"
+            // проверка что перед стрингой нет ничего в теле функции
+            && currentNode.parent.parent.previousSibling === null
+        ) {
 
-        //     await editor.insertSnippet(
-        //         new vscode.SnippetString('some2'),
-        //         editor.selection.active,
-        //         { undoStopBefore: false, undoStopAfter: false, }
-        //     )
-        // })();
+            // console.log(currentNode.parent.parent.previousSibling);
+            // console.log(currentNode.parent.parent.type);
+            
 
-        const parameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
+            const parameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
 
-        let cursorCounter = 1;
-        let snippet = '$0\n\n'
+            let cursorCounter = 1;
+            let snippet = '$0\n\n'
 
-        if (parameters.length > 0) {
+            if (parameters.length > 0) {
 
-            snippet += 'Parameters\n----------\n'
+                snippet += 'Parameters\n----------\n'
 
 
 
 
-            for (let i = 0; i < parameters.length; i++) {
-                const parameterNode = parameters[i];
+                for (let i = 0; i < parameters.length; i++) {
+                    const parameterNode = parameters[i];
 
-                switch (parameterNode.type) {
-                    case "identifier":
-                        snippet += parameterNode.text + ": Any\n"
-                        snippet += "\t$" + cursorCounter + "\n"
-                        cursorCounter++;
-                        break;
+                    switch (parameterNode.type) {
+                        case "identifier":
+                            snippet += parameterNode.text + ": Any\n"
+                            snippet += "\t$" + cursorCounter + "\n"
+                            cursorCounter++;
+                            break;
 
-                    case "typed_default_parameter":
-                    case "typed_parameter":
-                        snippet += parameterNode.text + "\n"
-                        snippet += "\t$" + cursorCounter + "\n"
-                        cursorCounter++;
-                        break;
+                        case "typed_default_parameter":
+                        case "typed_parameter":
+                            snippet += parameterNode.text + "\n"
+                            snippet += "\t$" + cursorCounter + "\n"
+                            cursorCounter++;
+                            break;
 
-                    case "list_splat_pattern":
-                        snippet += parameterNode.text + ": iterable\n"
-                        snippet += "\t$" + cursorCounter + "\n"
-                        cursorCounter++;
-                        break;
+                        case "list_splat_pattern":
+                            snippet += parameterNode.text + ": iterable\n"
+                            snippet += "\t$" + cursorCounter + "\n"
+                            cursorCounter++;
+                            break;
 
-                    case "default_parameter":
-                        snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n"
-                        snippet += "\t$" + cursorCounter + "\n"
-                        cursorCounter++;
-                        break;
+                        case "default_parameter":
+                            snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n"
+                            snippet += "\t$" + cursorCounter + "\n"
+                            cursorCounter++;
+                            break;
 
-                    case "dictionary_splat_pattern":
-                        snippet += parameterNode.text + ": dict\n"
-                        snippet += "\t$" + cursorCounter + "\n"
-                        cursorCounter++;
-                        break;
+                        case "dictionary_splat_pattern":
+                            snippet += parameterNode.text + ": dict\n"
+                            snippet += "\t$" + cursorCounter + "\n"
+                            cursorCounter++;
+                            break;
 
-                    default:
-                        break;
+                        default:
+                            break;
+                    }
                 }
             }
+
+            snippet += '\nReturns\n-------\n${' + cursorCounter + ":None}\n"
+            // editor.insertSnippet(
+            //     new vscode.SnippetString(snippet),
+            //     editor.selection.active,
+            //     // { undoStopBefore: false, undoStopAfter: false, }
+            // );
+            vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
         }
-
-        snippet += '\nReturns\n-------\n${' + cursorCounter + ":None}\n"
-        // editor.insertSnippet(
-        //     new vscode.SnippetString(snippet),
-        //     editor.selection.active,
-        //     // { undoStopBefore: false, undoStopAfter: false, }
-        // );
-        vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
     }
-
     isEmptyTripleQuoteString = (text: string): boolean => ["''''''", '""""""'].includes(text);
     isCursorInMiddle = (node: any, position: vscode.Position): boolean => {
         // Проверяем, что курсор посередине пустого докстринга
