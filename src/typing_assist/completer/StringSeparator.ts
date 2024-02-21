@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Context, ITypingAssist } from "../types";
+import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
 
 
 /**
@@ -15,25 +15,25 @@ export class StringSeparator implements ITypingAssist {
         const tree = context.tree;
         const editor = context.editor;
         const changeEvent = context.changeEvent;
-        let position = vscode.window.activeTextEditor?.selection.active;
+        const position = editor.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
-            row: position?.line,
-            column: position?.character
-        });
+            row: position.line,
+            column: position.character
+        }) as ExtendedSyntaxNode;
 
         // проверка что это перенос строки + пробелы
         return !!(
             (
                 changeEvent.contentChanges.length === 1
                 && editor
-                && position
                 && /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text)
                 && changeEvent.contentChanges[0].rangeLength == 0
             ) && (
                 (
                     // нода кавычка
                     currentNode.typeId === this.QUOTE_NODE_ID
+                    && currentNode.parent?.firstChild?.text
                     && this.isQuote(currentNode.parent.firstChild.text)
                     && !(
                         currentNode.parent.startPosition.row === position.line
@@ -43,15 +43,18 @@ export class StringSeparator implements ITypingAssist {
                 ) || (
                     // нода строка
                     currentNode.typeId === this.STRING_NODE_ID
+                    && currentNode.firstChild?.text
                     && this.isQuote(currentNode.firstChild.text)
                 ) || (
                     // нода фигурная скобка
                     currentNode.typeId === this.BRACE_NODE_ID
-                    && this.isFQuote(currentNode?.parent?.parent?.firstChild.text)
+                    && currentNode.parent?.parent?.firstChild?.text
+                    && this.isFQuote(currentNode.parent.parent.firstChild.text)
                 ) || (
                     // нода спец знак
                     currentNode.typeId === this.SPECIAL_CHARACTER_NODE_ID
-                    && this.isQuote(currentNode?.parent?.firstChild.text)
+                    && currentNode.parent?.firstChild?.text
+                    && this.isQuote(currentNode.parent.firstChild.text)
                     && !this.isCursorAtSecondPos(currentNode, position)
                 )
             )
@@ -61,12 +64,12 @@ export class StringSeparator implements ITypingAssist {
         const tree = context.tree;
         const editor = context.editor;
         const changeEvent = context.changeEvent;
-        let position = vscode.window.activeTextEditor?.selection.active;
+        let position = editor.selection.active;
 
         const currentNode = tree.rootNode.descendantForPosition({
-            row: position?.line,
-            column: position?.character
-        });
+            row: position.line,
+            column: position.character
+        }) as ExtendedSyntaxNode;
 
 
         if (position) {
@@ -82,7 +85,7 @@ export class StringSeparator implements ITypingAssist {
                     stringtNode = currentNode.parent
                     break;
                 case this.BRACE_NODE_ID:
-                    stringtNode = currentNode.parent.parent
+                    stringtNode = currentNode.parent!.parent
                     break;
                 default:
                     break;
@@ -94,23 +97,9 @@ export class StringSeparator implements ITypingAssist {
             ) {
                 console.log("stringtNode.parent.type === assignment || return_statement");
 
-                // editor.edit(editBuilder => {
-                // 	// Получаем позицию начала и конца ноды
-                // 	let startPosition = new vscode.Position(stringtNode.range.start.line, stringtNode.range.start.character);
-                // 	let endPosition = new vscode.Position(stringtNode.range.end.line, stringtNode.range.end.character);
-                // 	console.log(startPosition);
-                // 	console.log(endPosition);
-
-                // 	// Вставляем скобки перед началом ноды и после конца ноды
-                // 	editBuilder.insert(startPosition, "(");
-                // 	editBuilder.insert(endPosition, ")");
-                // }, { undoStopAfter: false, undoStopBefore: false });
+                // обертывание в скобки
 
             }
-            // console.log(stringtNode.parent.type);
-            // console.log(stringtNode.parent.text);
-            // console.log(stringtNode.parent);
-
 
             const ofs1 = editor.document.offsetAt(position)
             const ofs2 = ofs1 + changeEvent.contentChanges[0].text.length
@@ -128,7 +117,7 @@ export class StringSeparator implements ITypingAssist {
 
             const columnOffset = stringtNode.firstChild.startPosition.column;
             editor.edit(editBuilder => {
-            	editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
+                editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
             }, { undoStopAfter: false, undoStopBefore: false });
         }
     }

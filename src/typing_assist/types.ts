@@ -1,21 +1,24 @@
 import * as vscode from 'vscode';
-import TreeSitter from 'web-tree-sitter';
+import Parser, { SyntaxNode } from 'web-tree-sitter';
 
 export interface ITypingAssist {
-	/**
-	 * Определяет, можно ли применить этот ассист к changeEvent
-	 */
-	isApplicable(context: Context): Boolean;
-	/**
-	 * Изменяет код
-	 */
-	apply(context: Context): void;
+    /**
+     * Определяет, можно ли применить этот ассист к changeEvent
+     */
+    isApplicable(context: Context): Boolean;
+    /**
+     * Изменяет код
+     */
+    apply(context: Context): void;
 }
 
 export interface Context {
-    tree: any;
-    parser: TreeSitter;
+    tree: Parser.Tree;
+    parser: Parser;
     editor: vscode.TextEditor;
     changeEvent: vscode.TextDocumentChangeEvent;
 }
 
+export interface ExtendedSyntaxNode extends SyntaxNode {
+    typeId: number;
+}

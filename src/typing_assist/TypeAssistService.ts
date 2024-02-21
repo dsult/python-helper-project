@@ -4,57 +4,69 @@ import Parser from 'web-tree-sitter'; // Import the module with a default import
 
 export class TypeAssistService {
     assistList: ITypingAssist[];
-    parser: Parser; // Use the TreeSitter type for the parser
-    tree: Parser.Tree | null; // Use the Tree type and allow for null
+    parser: Parser; // Use the Parser type for the parser
+    tree: Parser.Tree // Use the Tree type and allow for null
     editor: vscode.TextEditor | undefined;
 
-    constructor(assistList: ITypingAssist[]) {
+
+    constructor(assistList: ITypingAssist[], tree: Parser.Tree, parser: Parser, editor: vscode.TextEditor | undefined) {
         this.assistList = assistList;
-        this.parser = {} as Parser; // Initialize with type assertion
-        this.tree = null; // Initialize as null
-        this.init();
+        this.parser = parser;
+        this.tree = tree;
+        this.editor = editor;
     }
 
-    async init() {
+    static async init(assistList: ITypingAssist[]) {
         await Parser.init(); // Call init on the imported module
 
         const path = require('path');
         const wasmPath = path.join(__dirname, '../lib/tree-sitter-python.wasm');
         const Python = await Parser.Language.load(wasmPath);
-        
-        this.parser = new Parser(); // Create a new instance of the Parser
-        this.parser.setLanguage(Python);
+
+        let parser = new Parser(); // Create a new instance of the Parser
+        parser.setLanguage(Python);
 
         let editor = vscode.window.activeTextEditor;
-        if (editor) {
-            const sourceCode = editor.document.getText();
-            this.tree = this.parser.parse(sourceCode);
-        }
 
-        this.editor = editor;
+        const sourceCode = editor!.document.getText();
+        let tree = parser.parse(sourceCode);
+
+        return new TypeAssistService(assistList, tree, parser, editor)
     }
 
     /**
      * Функция которая должна применяться на изменении активного документа, оно обновляет поля активного эдитора и дерево, которое будет соответствовать новому файлу
      */
     changeDoc(e: any) {
+
         this.editor = vscode.window.activeTextEditor;
-        const sourceCode = this.editor!.document.getText();
-        this.tree = this.parser.parse(sourceCode);
+        if (this.editor) {
+            const doc = this.editor.document;
+            if (doc.languageId === 'python') {
+                const sourceCode = doc.getText();
+                this.tree = this.parser.parse(sourceCode);
+            }
+        }
     }
     /**
      * инкриментальное обновление дерева
      */
     updateTree(e: vscode.TextDocumentChangeEvent) {
         const content = e.document.getText();
+
         e.contentChanges.forEach(change => {
-            
-            if (this.editor) {
+            if (!this.editor) {
+                this.changeDoc(null);
+            }
+            if (
+                this.editor
+                && this.editor.document.languageId === 'python'
+            ) {
                 // Convert VS Code's Position to Tree-sitter's Point
                 const startPosition = this.editor.document.positionAt(change.rangeOffset);
                 const oldEndPosition = this.editor.document.positionAt(change.rangeOffset + change.rangeLength);
                 const newEndPosition = this.editor.document.positionAt(change.rangeOffset + change.text.length);
-                this.tree!.edit({
+                this.tree.edit({
                     startIndex: change.rangeOffset,
                     oldEndIndex: change.rangeOffset + change.rangeLength,
                     newEndIndex: change.rangeOffset + change.text.length,
@@ -63,7 +75,8 @@ export class TypeAssistService {
                     newEndPosition: { row: newEndPosition.line, column: newEndPosition.character },
                 });
             } else {
-                console.error("Ну че, надо сделать полное обновление дока видимо");
+                // !!!!!!!!!!!!!!!!!!!!!А сюда вообще можно попасть?
+                // console.error("There is no editor set");
             }
         });
 
@@ -74,7 +87,11 @@ export class TypeAssistService {
      * Перебор ассистов, поиск подходящего под изменение
      */
     processing(changeEvent: vscode.TextDocumentChangeEvent): void {
-        if (this.editor) {
+
+        if (
+            this.editor
+            && this.editor.document.languageId === 'python'
+        ) {
 
             const context: Context = {
                 tree: this.tree,

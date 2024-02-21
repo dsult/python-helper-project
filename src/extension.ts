@@ -9,7 +9,7 @@ let disposable: vscode.Disposable | undefined;
 
 export async function activate(context: vscode.ExtensionContext) {
 
-    const assistService = new TypeAssistService([
+    const assistService = await TypeAssistService.init([
         new StringSeparator(),
         new DocstringCompleter(),
         new FunctionCompleter(),
@@ -28,69 +28,26 @@ export async function activate(context: vscode.ExtensionContext) {
     // отладочная штука 
     disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
 
-        let position = assistService.editor?.selection.active;
-        if (assistService.tree && position) {
+        if (assistService.editor) {
+            let position = assistService.editor.selection.active;
+            console.log(assistService);
+            console.log(assistService.tree);
 
             const currentNode = assistService.tree.rootNode.descendantForPosition({
                 row: position?.line,
                 column: position?.character,
             });
-            
-            console.log(assistService.tree.rootNode.text);
-            console.log(assistService.tree.rootNode.toString());
-            
+
+            // console.log(assistService.tree.rootNode.text);
+            // console.log(assistService.tree.rootNode.toString());
+
             console.log(currentNode);
             console.log(currentNode.type);
         }
 
-
-        // await assistService.editor?.insertSnippet(
-        //     new vscode.SnippetString('"some snippet"'),
-        //     assistService.editor.selection.active,
-        //     { undoStopBefore: false, undoStopAfter: false, }
-        // )
-
-        // await assistService.editor?.insertSnippet(
-        //     new vscode.SnippetString('"some snippet222"'),
-        //     assistService.editor.selection.active,
-        //     { undoStopBefore: false, undoStopAfter: false, }
-        // )
-        
-        // (async () => {
-        //     await assistService.editor?.insertSnippet(
-        //         new vscode.SnippetString('some'),
-        //         assistService.editor?.selection.active,
-        //         { undoStopBefore: false, undoStopAfter: false, }
-        //     )
-
-        //     await assistService.editor?.insertSnippet(
-        //         new vscode.SnippetString('some2'),
-        //         assistService.editor?.selection.active,
-        //         { undoStopBefore: false, undoStopAfter: false, }
-        //     )
-        // })();
-
-
-
-        undefined
-        undefined
-        undefined
-        undefined
-
-        // const doc = vscode.window.activeTextEditor?.document;
-
-        // const edit = new vscode.WorkspaceEdit();
-
-        // edit.set(doc!.uri, [
-        //     vscode.SnippetTextEdit.insert(new vscode.Position(position!.line, position!.character), new vscode.SnippetString('hello ${1:world}1111')),
-        // ]);
-
-        // vscode.workspace.applyEdit(edit);
     });
     context.subscriptions.push(disposable);
 
-
-    
 }
 
 export function deactivate() { }
