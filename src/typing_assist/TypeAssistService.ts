@@ -8,7 +8,6 @@ export class TypeAssistService {
     tree: Parser.Tree // Use the Tree type and allow for null
     editor: vscode.TextEditor | undefined;
 
-
     constructor(assistList: ITypingAssist[], tree: Parser.Tree, parser: Parser, editor: vscode.TextEditor | undefined) {
         this.assistList = assistList;
         this.parser = parser;

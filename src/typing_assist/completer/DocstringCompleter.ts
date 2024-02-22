@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
+import { SyntaxNode } from 'web-tree-sitter';
 
 
 /**
@@ -24,13 +25,13 @@ export class DocstringCompleter implements ITypingAssist {
             changeEvent.contentChanges.length === 1
             && /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text)
             && changeEvent.contentChanges[0].rangeLength == 0
-        ) && (
-                // проверка что мы внутри тройной докстроки 
-                currentNode.typeId === this.QUOTE_NODE_ID
-                && currentNode.parent !== null
-                && this.isEmptyTripleQuoteString(currentNode.parent.text)
-                && this.isCursorInMiddle(currentNode.parent, position)
-            )
+
+            // проверка что мы внутри тройной докстроки 
+            && currentNode.typeId === this.QUOTE_NODE_ID
+            && currentNode.parent !== null
+            && this.isEmptyTripleQuoteString(currentNode.parent.text)
+            && this.isCursorInMiddle(currentNode.parent, position)
+        )
     }
 
     apply(context: Context): void {
@@ -58,72 +59,91 @@ export class DocstringCompleter implements ITypingAssist {
             && currentNode.parent.parent.previousSibling === null
         ) {
 
+            const parameters = currentNode.parent.parent.parent.parent.namedChildren[1].namedChildren
 
-            const parameters = currentNode.parent.parent.parent.parent.children[2].namedChildren
+            let snippet = this.getDocstringSnippet(parameters, currentNode);
 
-            let cursorCounter = 1;
-            let snippet = '$0\n\n'
-
-            if (parameters.length > 0) {
-
-                snippet += 'Parameters\n----------\n'
-
-                for (let i = 0; i < parameters.length; i++) {
-                    const parameterNode = parameters[i];
-
-                    switch (parameterNode.type) {
-                        case "identifier":
-                            snippet += parameterNode.text + ": Any\n"
-                            snippet += "\t$" + cursorCounter + "\n"
-                            cursorCounter++;
-                            break;
-
-                        case "typed_default_parameter":
-                        case "typed_parameter":
-                            snippet += parameterNode.text + "\n"
-                            snippet += "\t$" + cursorCounter + "\n"
-                            cursorCounter++;
-                            break;
-
-                        case "list_splat_pattern":
-                            snippet += parameterNode.text + ": iterable\n"
-                            snippet += "\t$" + cursorCounter + "\n"
-                            cursorCounter++;
-                            break;
-
-                        case "default_parameter":
-                            if (parameterNode.firstChild && parameterNode.lastChild) {
-                                snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n"
-                                snippet += "\t$" + cursorCounter + "\n"
-                                cursorCounter++;
-                            }
-                            break;
-
-                        case "dictionary_splat_pattern":
-                            snippet += parameterNode.text + ": dict\n"
-                            snippet += "\t$" + cursorCounter + "\n"
-                            cursorCounter++;
-                            break;
-
-                        default:
-                            break;
-                    }
-                }
-            }
-
-            snippet += '\nReturns\n-------\n${' + cursorCounter + ":None}\n"
-            // editor.insertSnippet(
-            //     new vscode.SnippetString(snippet),
-            //     editor.selection.active,
-            //     // { undoStopBefore: false, undoStopAfter: false, }
-            // );
             vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
         }
     }
-    isEmptyTripleQuoteString = (text: string): boolean => ["''''''", '""""""'].includes(text);
-    isCursorInMiddle = (node: any, position: vscode.Position): boolean => {
+
+    private isEmptyTripleQuoteString = (text: string): boolean => ["''''''", '""""""'].includes(text);
+    private isCursorInMiddle = (node: any, position: vscode.Position): boolean => {
         // Проверяем, что курсор посередине пустого докстринга
         return position.character === node.startPosition.column + 3
             && position.line === node.startPosition.row;
     };
+
+    private getDocstringSnippet(parameters: SyntaxNode[], currentNode: SyntaxNode): string {
+        let cursorCounter = 1;
+        let snippet = '$0\n\n';
+
+        const isOnlySelfParam = !!(
+            parameters.length === 1
+            && parameters[0].text === "self"
+        );
+
+        if (parameters.length > 0
+            && !isOnlySelfParam) {
+
+            snippet += 'Parameters\n----------\n';
+
+            // пропуск селфа если он есть
+            const startParamIndex = (parameters[0].text === "self") ? 1 : 0;
+
+            for (let i = startParamIndex; i < parameters.length; i++) {
+                const parameterNode = parameters[i];
+
+                switch (parameterNode.type) {
+                    case "identifier":
+                        snippet += parameterNode.text + ": Any\n";
+                        snippet += "\t$" + cursorCounter + "\n";
+                        cursorCounter++;
+                        break;
+
+                    case "typed_default_parameter":
+                    case "typed_parameter":
+                        snippet += parameterNode.text + "\n";
+                        snippet += "\t$" + cursorCounter + "\n";
+                        cursorCounter++;
+                        break;
+
+                    case "list_splat_pattern":
+                        snippet += parameterNode.text + ": iterable\n";
+                        snippet += "\t$" + cursorCounter + "\n";
+                        cursorCounter++;
+                        break;
+
+                    case "default_parameter":
+                        if (parameterNode.firstChild && parameterNode.lastChild) {
+                            snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n";
+                            snippet += "\t$" + cursorCounter + "\n";
+                            cursorCounter++;
+                        }
+                        break;
+
+                    case "dictionary_splat_pattern":
+                        snippet += parameterNode.text + ": dict\n";
+                        snippet += "\t$" + cursorCounter + "\n";
+                        cursorCounter++;
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+            snippet += "\n";
+        }
+
+        // console.log(currentNode.parent.parent.parent.parent.namedChildren[2]);
+        const isReturnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].type === "type";
+        if (isReturnType) {
+            const returnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].text;
+            snippet += 'Returns\n-------\n' + returnType + '\n';
+
+        } else {
+            snippet += 'Returns\n-------\n${' + cursorCounter + ":None}\n";
+        }
+        return snippet;
+    }
 }

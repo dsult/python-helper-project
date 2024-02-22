@@ -14,9 +14,11 @@ export class FunctionCompleter implements ITypingAssist {
         const parser = context.parser;
 
         let position = editor.selection.active;
+
         if (
-            !(changeEvent.contentChanges.length === 1
-                && changeEvent.contentChanges[0].text == "()"
+            !(
+                changeEvent.contentChanges.length === 1
+                && changeEvent.contentChanges[0].text === "()"
                 && changeEvent.reason !== 1
             )
         ) {
@@ -56,12 +58,6 @@ export class FunctionCompleter implements ITypingAssist {
             column: position.character,
         });
 
-        // console.log(this.newTree.rootNode.text);
-        // console.log(currentNode.parent?.text);
-        // console.log(currentNode.parent?.type);
-        // console.log(currentNode.parent?.parent?.type);
-        // console.log(currentNode.parent?.previousSibling?.previousSibling?.text);
-
         return !!(
             (
                 currentNode?.parent?.type === "parameters"
@@ -70,6 +66,7 @@ export class FunctionCompleter implements ITypingAssist {
             )
         )
     }
+
 
     apply(context: Context): void {
 
@@ -82,24 +79,20 @@ export class FunctionCompleter implements ITypingAssist {
             column: position.character,
         });
 
-        let snippet: string;
-        // console.log();
+        let snippet: string = "";
 
-        if (
-            (
-                currentNode.parent?.parent?.parent?.type === "class_definition"
-                || (
-                    currentNode.parent?.parent?.parent?.type === "block"
-                    && currentNode.parent.parent.parent.parent?.type === "class_definition"
-                )
-            ) && ! (
-                currentNode.parent.previousNamedSibling?.previousNamedSibling?.text === "@staticmethod"
-            )
-        ) {
-            snippet = "(self$1):\n\t${0:pass}"
-        } else {
-            snippet = "($1):\n\t${0:pass}"
+        switch (this.checkDecoratorAndClassContext(currentNode)) {
+            case MethodContext.MethodInClass:
+                snippet = "(self$1):\n\t";
+                break;
+            case MethodContext.NotInClass:
+            case MethodContext.StaticMethodInClass:
+            default:
+                snippet = "($1):\n\t";
+                break;
         }
+
+        snippet += "${0:pass}"
 
         // vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
         editor.insertSnippet(
@@ -109,4 +102,36 @@ export class FunctionCompleter implements ITypingAssist {
         );
 
     }
+
+
+
+    private checkDecoratorAndClassContext(currentNode: Parser.SyntaxNode): MethodContext {
+
+        const inClassDefinition = (
+            currentNode.parent?.parent?.parent?.type === "class_definition"
+            || (
+                currentNode.parent?.parent?.parent?.type === "block"
+                && currentNode.parent.parent.parent.parent?.type === "class_definition"
+            )
+        );
+
+        const isStaticMethod =
+            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text === "@staticmethod";
+
+        switch (true) {
+            case inClassDefinition && isStaticMethod:
+                return MethodContext.StaticMethodInClass;
+            case inClassDefinition:
+                return MethodContext.MethodInClass;
+            default:
+                return MethodContext.NotInClass;
+        }
+
+    }
+}
+
+enum MethodContext {
+    StaticMethodInClass = "StaticMethodInClass",
+    MethodInClass = "MethodInClass",
+    NotInClass = "NotInClass"
 }

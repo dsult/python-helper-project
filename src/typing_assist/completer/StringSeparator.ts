@@ -26,7 +26,6 @@ export class StringSeparator implements ITypingAssist {
         return !!(
             (
                 changeEvent.contentChanges.length === 1
-                && editor
                 && /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text)
                 && changeEvent.contentChanges[0].rangeLength == 0
             ) && (
