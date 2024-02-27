@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
+import { Point, SyntaxNode } from 'web-tree-sitter';
 
 
 /**
@@ -59,7 +60,7 @@ export class StringSeparator implements ITypingAssist {
             )
         )
     }
-    apply(context: Context): void {
+    async apply(context: Context): Promise<void> {
         const tree = context.tree;
         const editor = context.editor;
         const changeEvent = context.changeEvent;
@@ -73,7 +74,7 @@ export class StringSeparator implements ITypingAssist {
 
         if (position) {
 
-            let stringtNode: any;
+            let stringtNode: SyntaxNode;
 
             switch (currentNode.typeId) {
                 case this.STRING_NODE_ID:
@@ -81,41 +82,57 @@ export class StringSeparator implements ITypingAssist {
                     break;
                 case this.QUOTE_NODE_ID:
                 case this.SPECIAL_CHARACTER_NODE_ID:
-                    stringtNode = currentNode.parent
+                    stringtNode = currentNode.parent!
                     break;
                 case this.BRACE_NODE_ID:
-                    stringtNode = currentNode.parent!.parent
+                    stringtNode = currentNode.parent!.parent!
                     break;
                 default:
+                    stringtNode = currentNode
                     break;
             }
 
-            if (
-                stringtNode.parent.type === "assignment"
-                || stringtNode.parent.type === "return_statement"
-            ) {
-                console.log("stringtNode.parent.type === assignment || return_statement");
+            let ofs1 = editor.document.offsetAt(position)
+            let ofs2 = ofs1 + changeEvent.contentChanges[0].text.length
 
-                // обертывание в скобки
+            const openQuoteText = stringtNode.firstChild!.text;
+            const closeQuoteText = stringtNode.lastChild!.text;
+
+            let columnOffset = stringtNode.firstChild!.startPosition.column;
+
+            if (
+                stringtNode.parent
+                && (
+                    stringtNode.parent.type === "assignment"
+                    || stringtNode.parent.type === "return_statement"
+                )
+            ) {
+                const pos1 = editor.document.positionAt(stringtNode.startIndex)
+                const pos2 = editor.document.positionAt(stringtNode.endIndex + 1 + changeEvent.contentChanges[0].text.length)
+                ofs1 += openQuoteText.length
+                ofs2 += closeQuoteText.length
+                columnOffset +=1
+                await editor.edit(editBuilder => {
+                    editBuilder.replace(new vscode.Range(pos1, pos1), "(");
+                }, { undoStopAfter: false, undoStopBefore: false });
+                await editor.edit(editBuilder => {
+                    editBuilder.replace(new vscode.Range(pos2, pos2), ")");
+                }, { undoStopAfter: false, undoStopBefore: false });
 
             }
 
-            const ofs1 = editor.document.offsetAt(position)
-            const ofs2 = ofs1 + changeEvent.contentChanges[0].text.length
-            const pos1 = position;
+
+            const pos1 = editor.document.positionAt(ofs1);
             const pos2 = editor.document.positionAt(ofs2);
 
-            const openQuoteText = stringtNode.firstChild.text;
-            const closeQuoteText = stringtNode.lastChild.text;
 
-            // editor.insertSnippet(
-            //     new vscode.SnippetString(closeQuoteText + '\n' + openQuoteText),
+            // await editor.insertSnippet(
+            //     new vscode.SnippetString(closeQuoteText + '\n\t' + openQuoteText),
             //     new vscode.Range(pos1, pos2),
             //     { undoStopBefore: false, undoStopAfter: false, }
             // );
 
-            const columnOffset = stringtNode.firstChild.startPosition.column;
-            editor.edit(editBuilder => {
+            await editor.edit(editBuilder => {
                 editBuilder.replace(new vscode.Range(pos1, pos2), closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText);
             }, { undoStopAfter: false, undoStopBefore: false });
         }
@@ -141,4 +158,7 @@ export class StringSeparator implements ITypingAssist {
         return position.character === node.startPosition.column + 1
             && position.line === node.startPosition.row;
     };
+    convertToPoint(point: Point): vscode.Position {
+        return new vscode.Position(point.row, point.column);
+    }
 }

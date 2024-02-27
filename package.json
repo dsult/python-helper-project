@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -19,7 +19,21 @@
         "command": "python-helper-project.test",
         "title": "Test cmd"
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "python-helper-project.DocstringFormat": {
+          "type": "string",
+          "default": "Numpy",
+          "enum": [
+            "Numpy",
+            "Epytext"
+          ],
+          "description": "Select standard docstring format"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",

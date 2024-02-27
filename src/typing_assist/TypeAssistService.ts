@@ -27,6 +27,7 @@ export class TypeAssistService {
 
         let editor = vscode.window.activeTextEditor;
 
+        // вот тут едитора может не быть
         const sourceCode = editor!.document.getText();
         let tree = parser.parse(sourceCode);
 

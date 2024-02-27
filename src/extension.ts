@@ -28,22 +28,11 @@ export async function activate(context: vscode.ExtensionContext) {
     // отладочная штука 
     disposable = vscode.commands.registerCommand('python-helper-project.test', async () => {
 
-        if (assistService.editor) {
-            let position = assistService.editor.selection.active;
-            console.log(assistService);
-            console.log(assistService.tree);
+        const DocstringFormat = vscode.workspace
+            .getConfiguration()
+            .get('python-helper-project.DocstringFormat');
 
-            const currentNode = assistService.tree.rootNode.descendantForPosition({
-                row: position?.line,
-                column: position?.character,
-            });
-
-            // console.log(assistService.tree.rootNode.text);
-            // console.log(assistService.tree.rootNode.toString());
-
-            console.log(currentNode);
-            console.log(currentNode.type);
-        }
+        console.log('Selected standard documentation:', DocstringFormat);
 
     });
     context.subscriptions.push(disposable);
