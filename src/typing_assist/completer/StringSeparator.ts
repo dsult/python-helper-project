@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
 import { Point, SyntaxNode } from 'web-tree-sitter';
+import { hasParentWithType } from '../../TreeUtils';
 
 
 /**
@@ -29,6 +30,9 @@ export class StringSeparator implements ITypingAssist {
                 changeEvent.contentChanges.length === 1
                 && /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text)
                 && changeEvent.contentChanges[0].rangeLength == 0
+                && editor.selection.active.isEqual(
+                    changeEvent.contentChanges[0].range.start
+                )
             ) && (
                 (
                     // нода кавычка
@@ -57,6 +61,7 @@ export class StringSeparator implements ITypingAssist {
                     && this.isQuote(currentNode.parent.firstChild.text)
                     && !this.isCursorAtSecondPos(currentNode, position)
                 )
+
             )
         )
     }
@@ -100,18 +105,29 @@ export class StringSeparator implements ITypingAssist {
 
             let columnOffset = stringtNode.firstChild!.startPosition.column;
 
+
+
             if (
                 stringtNode.parent
                 && (
                     stringtNode.parent.type === "assignment"
                     || stringtNode.parent.type === "return_statement"
+                    || stringtNode.parent.type === "augmented_assignment"
+                    || stringtNode.parent.type === "comparison_operator"
+                    || stringtNode.parent.type === "binary_operator"
+                ) && !(
+                    hasParentWithType(stringtNode, 'parenthesized_expression')
+                    || hasParentWithType(stringtNode, 'argument_list')
                 )
+
             ) {
+                // parenthesized_expression
+                // parenthesized_expression
                 const pos1 = editor.document.positionAt(stringtNode.startIndex)
-                const pos2 = editor.document.positionAt(stringtNode.endIndex + 1 + changeEvent.contentChanges[0].text.length)
+                const pos2 = editor.document.positionAt(stringtNode.endIndex + changeEvent.contentChanges[0].text.length)
                 ofs1 += openQuoteText.length
                 ofs2 += closeQuoteText.length
-                columnOffset +=1
+                columnOffset += 1
                 await editor.edit(editBuilder => {
                     editBuilder.replace(new vscode.Range(pos1, pos1), "(");
                 }, { undoStopAfter: false, undoStopBefore: false });
@@ -161,4 +177,7 @@ export class StringSeparator implements ITypingAssist {
     convertToPoint(point: Point): vscode.Position {
         return new vscode.Position(point.row, point.column);
     }
+
+
+
 }

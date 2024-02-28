@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
-import { SyntaxNode } from 'web-tree-sitter';
+import { getDocstringSnippet } from './utuls/DocstringSnippetMaker';
 
 
 /**
@@ -31,6 +31,9 @@ export class DocstringCompleter implements ITypingAssist {
             && currentNode.parent !== null
             && this.isEmptyTripleQuoteString(currentNode.parent.text)
             && this.isCursorInMiddle(currentNode.parent, position)
+            && editor.selection.active.isEqual(
+                changeEvent.contentChanges[0].range.start
+            )
         )
     }
 
@@ -51,30 +54,23 @@ export class DocstringCompleter implements ITypingAssist {
             { undoStopBefore: false, undoStopAfter: false, }
         )
 
+        const DocstringFormat = vscode.workspace
+            .getConfiguration()
+            .get('typing-assist.DocstringFormat');
+        
         if (
             currentNode.parent?.parent?.parent?.parent?.type == "function_definition"
             // (может ли тут быть обращение к несуществующему элементу???)
             && currentNode.parent.parent.parent.parent.children[2].type == "parameters"
             // проверка что перед стрингой нет ничего в теле функции
             && currentNode.parent.parent.previousSibling === null
+
+            && DocstringFormat !== "Plain"
         ) {
-
+            
             const parameters = currentNode.parent.parent.parent.parent.namedChildren[1].namedChildren
-            const DocstringFormat = vscode.workspace
-                .getConfiguration()
-                .get('python-helper-project.DocstringFormat');
-            let snippet;
-            switch (DocstringFormat) {
-                case "Epytext":
-                    snippet = this.getEpytextDocstringSnippet(parameters, currentNode);
-                    break;
 
-                case "Numpy":
-                default:
-                    snippet = this.getNumpyDocstringSnippet(parameters, currentNode);
-                    break;
-            }
-
+            const snippet = getDocstringSnippet(parameters, currentNode);
 
             vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
         }
@@ -87,133 +83,4 @@ export class DocstringCompleter implements ITypingAssist {
             && position.line === node.startPosition.row;
     };
 
-    private getNumpyDocstringSnippet(parameters: SyntaxNode[], currentNode: SyntaxNode): string {
-        let cursorCounter = 1;
-        let snippet = '$0\n\n';
-
-        const isOnlySelfParam = !!(
-            parameters.length === 1
-            && parameters[0].text === "self"
-        );
-
-        if (parameters.length > 0
-            && !isOnlySelfParam) {
-
-            snippet += 'Parameters\n----------\n';
-
-            // пропуск селфа если он есть
-            const startParamIndex = (parameters[0].text === "self") ? 1 : 0;
-
-            for (let i = startParamIndex; i < parameters.length; i++) {
-                const parameterNode = parameters[i];
-
-                switch (parameterNode.type) {
-                    case "identifier":
-                        snippet += parameterNode.text + ": Any\n";
-                        snippet += "\t$" + cursorCounter + "\n";
-                        cursorCounter++;
-                        break;
-
-                    case "typed_default_parameter":
-                    case "typed_parameter":
-                        snippet += parameterNode.text + "\n";
-                        snippet += "\t$" + cursorCounter + "\n";
-                        cursorCounter++;
-                        break;
-
-                    case "list_splat_pattern":
-                        snippet += parameterNode.text + ": iterable\n";
-                        snippet += "\t$" + cursorCounter + "\n";
-                        cursorCounter++;
-                        break;
-
-                    case "default_parameter":
-                        if (parameterNode.firstChild && parameterNode.lastChild) {
-                            snippet += parameterNode.firstChild.text + ": Any = " + parameterNode.lastChild.text + "\n";
-                            snippet += "\t$" + cursorCounter + "\n";
-                            cursorCounter++;
-                        }
-                        break;
-
-                    case "dictionary_splat_pattern":
-                        snippet += parameterNode.text + ": dict\n";
-                        snippet += "\t$" + cursorCounter + "\n";
-                        cursorCounter++;
-                        break;
-
-                    default:
-                        break;
-                }
-            }
-            snippet += "\n";
-        }
-
-        // console.log(currentNode.parent.parent.parent.parent.namedChildren[2]);
-        const isReturnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].type === "type";
-        if (isReturnType) {
-            const returnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].text;
-            snippet += 'Returns\n-------\n' + returnType + '\n';
-
-        } else {
-            snippet += 'Returns\n-------\n${' + cursorCounter + ":None}\n";
-        }
-        return snippet;
-    }
-
-    private getEpytextDocstringSnippet(parameters: SyntaxNode[], currentNode: SyntaxNode): string {
-        let cursorCounter = 1;
-        let snippet = '$0\n';
-
-        // пропуск селфа если он есть
-        const startParamIndex = (parameters.length > 0) && (parameters[0].text === "self") ? 1 : 0;
-
-        for (let i = startParamIndex; i < parameters.length; i++) {
-            const parameterNode = parameters[i];
-
-            switch (parameterNode.type) {
-                case "identifier":
-                    snippet += "@param " + parameterNode.text + ": $" + cursorCounter + "\n";
-                    cursorCounter++;
-                    break;
-
-                case "list_splat_pattern":
-                case "default_parameter":
-                case "dictionary_splat_pattern":
-                    if (parameterNode.firstNamedChild) {
-                        snippet += "@param " + parameterNode.firstNamedChild.text + ": $" + cursorCounter + "\n";
-                        cursorCounter++;
-                    }
-                    break;
-
-                case "typed_default_parameter":
-                case "typed_parameter":
-                    if (parameterNode.firstNamedChild?.nextNamedSibling) {
-                        console.log(parameterNode.firstNamedChild.text);
-                        console.log(parameterNode.firstNamedChild.type);
-
-                        snippet += "@type " + parameterNode.firstNamedChild.text + ": " + parameterNode.firstNamedChild.nextNamedSibling.text + "\n";
-                        cursorCounter++;
-                    }
-                    if (parameterNode.firstNamedChild) {
-                        snippet += "@param " + parameterNode.firstNamedChild.text + ": $" + cursorCounter + "\n";
-                        cursorCounter++;
-                    }
-                    break;
-                default:
-                    break;
-            }
-        }
-
-
-        // console.log(currentNode.parent.parent.parent.parent.namedChildren[2]);
-        const isReturnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].type === "type";
-        if (isReturnType) {
-            const returnType = currentNode.parent?.parent?.parent?.parent?.namedChildren[2].text;
-            snippet += '@return: ' + returnType;
-
-        } else {
-            snippet += '@return: $' + cursorCounter;
-        }
-        return snippet;
-    }
 }

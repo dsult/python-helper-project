@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -23,11 +23,14 @@
     "configuration": {
       "type": "object",
       "properties": {
-        "python-helper-project.DocstringFormat": {
+        "typing-assist.DocstringFormat": {
           "type": "string",
-          "default": "Numpy",
+          "default": "NumPy",
           "enum": [
-            "Numpy",
+            "Plain",
+            "NumPy",
+            "reStructuredText",
+            "Google",
             "Epytext"
           ],
           "description": "Select standard docstring format"

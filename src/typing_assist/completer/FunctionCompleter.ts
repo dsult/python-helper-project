@@ -120,14 +120,12 @@ export class FunctionCompleter implements ITypingAssist {
             )
         );
 
-        const isStaticMethod =
-            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text === "@staticmethod";
-        const isClassMethod =
-            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text === "@classmethod";
-        const isProperty =
-            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text === "@property";
-        const isSetter =
-            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text.endsWith(".setter");
+        const lastDecoratorText = currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text;
+
+        const isStaticMethod = lastDecoratorText === "@staticmethod";
+        const isClassMethod = lastDecoratorText === "@classmethod";
+        const isProperty = lastDecoratorText === "@property";
+        const isSetter = !!lastDecoratorText?.endsWith(".setter");
 
         switch (true) {
 
@@ -139,6 +137,7 @@ export class FunctionCompleter implements ITypingAssist {
 
             case isInClassDefinition && isSetter:
                 return FunctionKind.Setter;
+                
             case isInClassDefinition && isProperty:
                 return FunctionKind.Property;
 
