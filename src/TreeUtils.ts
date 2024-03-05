@@ -1,4 +1,5 @@
-import { SyntaxNode } from "web-tree-sitter";
+import { Point, SyntaxNode } from "web-tree-sitter";
+import * as vscode from 'vscode';
 
 /**
  * Проверяет наличие ноды с определенным типом в родительских нодах относительно целевой ноды.
@@ -15,4 +16,18 @@ export function hasParentWithType(targetNode: SyntaxNode, type: string): boolean
         parent = parent.parent;
     }
     return false;
+}
+export function getParentWithType(targetNode: SyntaxNode, type: string): SyntaxNode | null {
+    let parent = targetNode.parent;
+    while (parent !== null) {
+        if (parent.type === type) {
+            break;
+        }
+        parent = parent.parent;
+    }
+    return parent
+}
+
+export function convertToPoint(point: Point): vscode.Position {
+    return new vscode.Position(point.row, point.column);
 }

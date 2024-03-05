@@ -3,6 +3,7 @@ import { StringSeparator } from './typing_assist/completer/StringSeparator';
 import { TypeAssistService } from './typing_assist/TypeAssistService';
 import { DocstringCompleter } from './typing_assist/completer/DocstringCompleter';
 import { FunctionCompleter } from './typing_assist/completer/FunctionCompleter';
+import { BracketingExpressionCompleter } from './typing_assist/completer/BracketingExpressionCompleter';
 
 
 let disposable: vscode.Disposable | undefined;
@@ -13,6 +14,7 @@ export async function activate(context: vscode.ExtensionContext) {
         new StringSeparator(),
         new DocstringCompleter(),
         new FunctionCompleter(),
+        new BracketingExpressionCompleter(),
     ]);
 
     vscode.window.onDidChangeActiveTextEditor(e => assistService.changeDoc(e));

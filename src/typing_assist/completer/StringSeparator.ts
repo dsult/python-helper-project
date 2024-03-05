@@ -8,6 +8,17 @@ import { hasParentWithType } from '../../TreeUtils';
  * Ассист для нажатия ентра внутри строк
  */
 export class StringSeparator implements ITypingAssist {
+    optionName: string = "stringSeparator";
+
+    isOn(): Boolean {
+
+        const assistOptions = vscode.workspace.getConfiguration().get('typing-assist.assistOptions');
+        const stringSeparatorEnabled = Array.isArray(assistOptions) && assistOptions.includes("stringSeparator");
+        
+        return stringSeparatorEnabled;
+        
+    }
+
     readonly STRING_NODE_ID = 200;
     readonly QUOTE_NODE_ID = 100;
     readonly SPECIAL_CHARACTER_NODE_ID = 86;
@@ -174,10 +185,5 @@ export class StringSeparator implements ITypingAssist {
         return position.character === node.startPosition.column + 1
             && position.line === node.startPosition.row;
     };
-    convertToPoint(point: Point): vscode.Position {
-        return new vscode.Position(point.row, point.column);
-    }
-
-
 
 }

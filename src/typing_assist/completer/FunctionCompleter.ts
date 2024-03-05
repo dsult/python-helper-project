@@ -6,6 +6,7 @@ import Parser from 'web-tree-sitter';
  * Дописывание функции после проставления скобки
  */
 export class FunctionCompleter implements ITypingAssist {
+    optionName: string = 'functionCompleter';
     newTree: Parser.Tree | undefined;
     isApplicable(context: Context): Boolean {
         const tree = context.tree;
@@ -19,7 +20,6 @@ export class FunctionCompleter implements ITypingAssist {
             !(
                 changeEvent.contentChanges.length === 1
                 && changeEvent.contentChanges[0].text === "()"
-                && changeEvent.reason !== 1
             )
         ) {
             return false;

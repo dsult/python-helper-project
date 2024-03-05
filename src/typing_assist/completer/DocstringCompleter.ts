@@ -7,6 +7,8 @@ import { getDocstringSnippet } from './utuls/DocstringSnippetMaker';
  * Автоматическая док строка (для функций)
  */
 export class DocstringCompleter implements ITypingAssist {
+    optionName: string = "docstringCompleter";
+    
     readonly QUOTE_NODE_ID = 100;
 
     isApplicable(context: Context): Boolean {

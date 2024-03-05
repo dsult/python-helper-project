@@ -90,6 +90,11 @@ export class TypeAssistService {
 
         if (
             this.editor
+
+            // не тригириться на ctrl+z, ctrl+shift+z  
+            && changeEvent.reason !== 1
+            && changeEvent.reason !== 2
+
             && this.editor.document.languageId === 'python'
         ) {
 
@@ -101,11 +106,21 @@ export class TypeAssistService {
             };
 
             for (const assist of this.assistList) {
-                if (assist.isApplicable(context)) {
+                if (
+                    isOn(assist.optionName)
+                    && assist.isApplicable(context)
+                ) {
                     assist.apply(context);
                     break;
                 }
             }
         }
     }
+}
+
+function isOn(optionName: string):Boolean {
+    const assistOptions = vscode.workspace.getConfiguration().get('typing-assist.assistOptions');
+    const stringSeparatorEnabled = Array.isArray(assistOptions) && assistOptions.includes(optionName);
+    
+    return stringSeparatorEnabled;
 }

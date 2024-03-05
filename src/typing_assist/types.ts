@@ -3,9 +3,15 @@ import Parser, { SyntaxNode } from 'web-tree-sitter';
 
 export interface ITypingAssist {
     /**
+     * имя в настройках
+     */
+    optionName: string;
+
+    /**
      * Определяет, можно ли применить этот ассист к changeEvent
      */
     isApplicable(context: Context): Boolean;
+
     /**
      * Изменяет код
      */
