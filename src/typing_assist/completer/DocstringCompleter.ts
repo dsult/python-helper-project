@@ -37,7 +37,7 @@ export class DocstringCompleter implements ITypingAssist {
         )
     }
 
-    apply(context: Context): void {
+    async apply(context: Context): Promise<void> {
         const tree = context.tree;
         const editor = context.editor;
 
@@ -48,31 +48,43 @@ export class DocstringCompleter implements ITypingAssist {
             column: position.character
         });
 
-        editor.insertSnippet(
-            new vscode.SnippetString('\n'),
-            editor.selection.active,
-            { undoStopBefore: false, undoStopAfter: false, }
-        )
-
         const DocstringFormat = vscode.workspace
             .getConfiguration()
-            .get('typing-assist.DocstringFormat');
-        
+            .get('typing-assist.docstringFormat');
+
         if (
             currentNode.parent?.parent?.parent?.parent?.type == "function_definition"
             // (может ли тут быть обращение к несуществующему элементу???)
             && currentNode.parent.parent.parent.parent.children[2].type == "parameters"
             // проверка что перед стрингой нет ничего в теле функции
             && currentNode.parent.parent.previousSibling === null
-
+            // в случае плейна доп. сниппет не нужен
             && DocstringFormat !== "Plain"
         ) {
-            
-            const parameters = currentNode.parent.parent.parent.parent.namedChildren[1].namedChildren
+
+            const parameters = currentNode.parent.parent.parent.parent.namedChildren[1]?.namedChildren
 
             const snippet = getDocstringSnippet(parameters, currentNode);
 
-            vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
+            await editor.insertSnippet(
+                new vscode.SnippetString('\n'),
+                editor.selection.active,
+                { undoStopBefore: false, undoStopAfter: false, }
+            )
+
+            await editor.insertSnippet(
+                new vscode.SnippetString(snippet),
+                editor.selection.active,
+                { undoStopBefore: true, undoStopAfter: true, }
+            )
+            // await editor.insertSnippet(new vscode.SnippetString('$0'));
+
+        } else {
+            await editor.insertSnippet(
+                new vscode.SnippetString('\n'),
+                editor.selection.active,
+                { undoStopBefore: false, undoStopAfter: false, }
+            )
         }
     }
 

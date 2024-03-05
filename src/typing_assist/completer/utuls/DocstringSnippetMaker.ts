@@ -5,7 +5,7 @@ export function getDocstringSnippet(parameters: SyntaxNode[], currentNode: Synta
     let snippet;
     const DocstringFormat = vscode.workspace
         .getConfiguration()
-        .get('typing-assist.DocstringFormat');
+        .get('typing-assist.docstringFormat');
 
     switch (DocstringFormat) {
         case "Epytext":
@@ -129,7 +129,7 @@ function getGoogleDocstringSnippet(parameters: SyntaxNode[], currentNode: Syntax
                     break;
 
                 case "typed_default_parameter":
-                case "typed_parameter":                    
+                case "typed_parameter":
                     snippet += "\t" + parameterNode.firstNamedChild?.text
                         + " (" + parameterNode.firstNamedChild?.nextNamedSibling?.text + ")"
                         + ": $" + cursorCounter + "\n";
@@ -144,7 +144,7 @@ function getGoogleDocstringSnippet(parameters: SyntaxNode[], currentNode: Syntax
                 case "default_parameter":
                     if (parameterNode.firstNamedChild) {
                         snippet += "\t" + parameterNode.firstNamedChild.text
-                        + ": $" + cursorCounter + "\n";
+                            + ": $" + cursorCounter + "\n";
                         cursorCounter++;
                     }
                     break;
