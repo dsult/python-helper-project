@@ -79,22 +79,29 @@ export class FunctionCompleter implements ITypingAssist {
             column: position.character,
         });
 
-        let snippet: string = "";
+        let snippet: string;
 
-        switch (this.checkDecoratorAndClassContext(currentNode)) {
-            case MethodContext.MethodInClass:
-                snippet = "(self$1):\n\t";
+        switch (this.checkFunctionKind(currentNode)) {
+            case FunctionKind.Method:
+                snippet = "(self$1):\n\t${0:pass}";
                 break;
-            case MethodContext.NotInClass:
-            case MethodContext.StaticMethodInClass:
+            case FunctionKind.Setter:
+                snippet = "(self, value):\n\t${0:pass}";
+                break;
+            case FunctionKind.ClassMethod:
+                snippet = "(cls$1):\n\t${0:pass}";
+                break;
+            case FunctionKind.Property:
+                snippet = "(self):\n\treturn $0";
+                break;
+            case FunctionKind.RegularFunction:
+            case FunctionKind.StaticMethod:
             default:
-                snippet = "($1):\n\t";
+                snippet = "($1):\n\t${0:pass}";
                 break;
         }
 
-        snippet += "${0:pass}"
 
-        // vscode.commands.executeCommand("editor.action.insertSnippet", { snippet: snippet, })
         editor.insertSnippet(
             new vscode.SnippetString(snippet),
             new vscode.Range(position, position.translate(0, 2)),
@@ -103,11 +110,9 @@ export class FunctionCompleter implements ITypingAssist {
 
     }
 
+    private checkFunctionKind(currentNode: Parser.SyntaxNode): FunctionKind {
 
-
-    private checkDecoratorAndClassContext(currentNode: Parser.SyntaxNode): MethodContext {
-
-        const inClassDefinition = (
+        const isInClassDefinition = (
             currentNode.parent?.parent?.parent?.type === "class_definition"
             || (
                 currentNode.parent?.parent?.parent?.type === "block"
@@ -115,23 +120,42 @@ export class FunctionCompleter implements ITypingAssist {
             )
         );
 
-        const isStaticMethod =
-            currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text === "@staticmethod";
+        const lastDecoratorText = currentNode.parent?.previousNamedSibling?.previousNamedSibling?.text;
+
+        const isStaticMethod = lastDecoratorText === "@staticmethod";
+        const isClassMethod = lastDecoratorText === "@classmethod";
+        const isProperty = lastDecoratorText === "@property";
+        const isSetter = !!lastDecoratorText?.endsWith(".setter");
 
         switch (true) {
-            case inClassDefinition && isStaticMethod:
-                return MethodContext.StaticMethodInClass;
-            case inClassDefinition:
-                return MethodContext.MethodInClass;
+
+            case isInClassDefinition && isStaticMethod:
+                return FunctionKind.StaticMethod;
+
+            case isInClassDefinition && isClassMethod:
+                return FunctionKind.ClassMethod;
+
+            case isInClassDefinition && isSetter:
+                return FunctionKind.Setter;
+                
+            case isInClassDefinition && isProperty:
+                return FunctionKind.Property;
+
+            case isInClassDefinition:
+                return FunctionKind.Method;
+
             default:
-                return MethodContext.NotInClass;
+                return FunctionKind.RegularFunction;
         }
 
     }
 }
 
-enum MethodContext {
-    StaticMethodInClass = "StaticMethodInClass",
-    MethodInClass = "MethodInClass",
-    NotInClass = "NotInClass"
+enum FunctionKind {
+    StaticMethod,
+    Method,
+    RegularFunction,
+    ClassMethod,
+    Setter,
+    Property,
 }
