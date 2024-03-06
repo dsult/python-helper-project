@@ -3,22 +3,12 @@ import { Context, ITypingAssist } from "./types";
 import Parser from "web-tree-sitter"; // Import the module with a default import
 
 export class TypeAssistService {
-  assistList: ITypingAssist[];
-  parser: Parser; // Use the Parser type for the parser
-  tree: Parser.Tree; // Use the Tree type and allow for null
-  editor: vscode.TextEditor | undefined;
-
   constructor(
-    assistList: ITypingAssist[],
-    tree: Parser.Tree,
-    parser: Parser,
-    editor: vscode.TextEditor | undefined
-  ) {
-    this.assistList = assistList;
-    this.parser = parser;
-    this.tree = tree;
-    this.editor = editor;
-  }
+    public assistList: ITypingAssist[],
+    public tree: Parser.Tree,
+    public parser: Parser,
+    public editor: vscode.TextEditor | undefined
+  ) {}
 
   static async init(assistList: ITypingAssist[]) {
     await Parser.init(); // Call init on the imported module

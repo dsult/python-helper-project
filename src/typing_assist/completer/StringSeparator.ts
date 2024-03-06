@@ -42,9 +42,8 @@ export class StringSeparator implements ITypingAssist {
       changeEvent.contentChanges[0].rangeLength == 0 &&
       editor.selection.active.isEqual(
         changeEvent.contentChanges[0].range.start
-      ) &&
-      (// нода кавычка
-      (currentNode.typeId === this.QUOTE_NODE_ID &&
+      ) && // нода кавычка
+      ((currentNode.typeId === this.QUOTE_NODE_ID &&
         currentNode.parent?.firstChild?.text &&
         this.isQuote(currentNode.parent.firstChild.text) &&
         !(

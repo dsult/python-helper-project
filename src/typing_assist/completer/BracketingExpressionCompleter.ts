@@ -1,114 +1,134 @@
 import * as vscode from "vscode";
 import { Context, ITypingAssist } from "../types";
 import { SyntaxNode } from "web-tree-sitter";
-import { getParentWithType, hasParentWithType } from "../../TreeUtils";
+import {
+  deleteSpacesAfterCoursor,
+  getParentWithType,
+  hasParentWithType,
+  isPositionInsideNode,
+} from "../../TreeUtils";
 
 /**
  * Ассист для нажатия ентра внутри строк
  */
 export class BracketingExpressionCompleter implements ITypingAssist {
   optionName: string = "bracketingExpressionCompleter";
+
+  /**
+   * нода, которую мы собираемся оборачивать в скобки
+   */
+  targetNode: SyntaxNode | null = null;
+
   isApplicable(context: Context): Boolean {
-    const tree = context.tree;
     const editor = context.editor;
     const changeEvent = context.changeEvent;
-    const position = editor.selection.active;
 
+    if (
+      !(
+        changeEvent.contentChanges.length === 1 &&
+        /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
+        changeEvent.contentChanges[0].rangeLength == 0 &&
+        editor.selection.active.isEqual(
+          changeEvent.contentChanges[0].range.start
+        )
+      )
+    ) {
+      return false;
+    }
+
+    const position = editor.selection.active;
+    const tree = context.tree;
     const currentNode = tree.rootNode.descendantForPosition({
       row: position.line,
       column: position.character,
     });
 
-    const hasParentWithTargetType = targetTypes.some((type) =>
-      hasParentWithType(currentNode, type)
+    if (hasParentWithType(currentNode, "expression_statement")) {
+      let targetParentNode = getParentWithType(
+        currentNode,
+        "expression_statement"
+      );
+
+      if (
+        targetParentNode === null ||
+        !targetParentNode.firstChild?.lastChild
+      ) {
+        return false;
+      }
+      this.targetNode = targetParentNode.firstChild.lastChild;
+    } else if (hasParentWithType(currentNode, "return_statement")) {
+      let targetParentNode = getParentWithType(currentNode, "return_statement");
+
+      if (targetParentNode === null || !targetParentNode.lastChild) {
+        return false;
+      }
+      this.targetNode = targetParentNode.lastChild;
+    } else {
+      return false;
+    }
+
+    // этот кусок выглядит ненадежным, перебрать все возможные ноды,
+    // в которых не нужно делать перенос будет не так просто
+
+    const positionOffset = editor.document.offsetAt(position);
+    const solidThingTypes = [
+      "integer",
+      "identifier",
+      "float",
+      //   "string",
+    ];
+    const isCoursorInsideSolidThing = !!(
+      currentNode.startIndex !== positionOffset &&
+      solidThingTypes.includes(currentNode.type)
     );
-    const isPrevCharBackSlash = currentNode.type === "line_continuation";
-    // console.log(currentNode.type);
 
     return !!(
-      changeEvent.contentChanges.length === 1 &&
-      /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
-      changeEvent.contentChanges[0].rangeLength == 0 &&
-      editor.selection.active.isEqual(
-        changeEvent.contentChanges[0].range.start
-      ) &&
-      hasParentWithTargetType &&
-      !(
-        hasParentWithType(currentNode, "parenthesized_expression") ||
-        hasParentWithType(currentNode, "argument_list")
-      ) &&
-      !isPrevCharBackSlash
+      isPositionInsideNode(position, this.targetNode) &&
+      !hasParentWithType(currentNode, "parenthesized_expression") &&
+      !hasParentWithType(currentNode, "argument_list") &&
+      !isCoursorInsideSolidThing
     );
   }
   async apply(context: Context): Promise<void> {
-    const tree = context.tree;
     const editor = context.editor;
     const changeEvent = context.changeEvent;
-    const position = editor.selection.active;
 
-    const currentNode = tree.rootNode.descendantForPosition({
-      row: position.line,
-      column: position.character,
-    });
-
-    let targetParentNode: SyntaxNode | null = null;
-
-    // Перебираем типы из массива targetTypes
-    for (const type of targetTypes) {
-      // Если находим узел с текущим типом, присваиваем его переменной targetParentNode
-      if (hasParentWithType(currentNode, type)) {
-        targetParentNode = getParentWithType(currentNode, type);
-        break; // Прерываем цикл, если узел найден
-      }
+    if (!this.targetNode) {
+      return;
     }
 
-    if (targetParentNode?.lastChild) {
-      let pos1 = editor.document.positionAt(
-        targetParentNode.lastChild.startIndex
-      );
-      let pos2 = editor.document.positionAt(
-        targetParentNode.lastChild.endIndex +
-          changeEvent.contentChanges[0].text.length
-      );
+    let pos1 = editor.document.positionAt(this.targetNode.startIndex);
+    let pos2 = editor.document.positionAt(
+      this.targetNode.endIndex + changeEvent.contentChanges[0].text.length
+    );
 
-      await editor.edit(
-        (editBuilder) => {
-          editBuilder.replace(new vscode.Range(pos1, pos1), "(");
-        },
-        { undoStopAfter: false, undoStopBefore: false }
-      );
-      await editor.edit(
-        (editBuilder) => {
-          editBuilder.replace(new vscode.Range(pos2, pos2), ")");
-        },
-        { undoStopAfter: false, undoStopBefore: false }
-      );
+    await editor.edit(
+      (editBuilder) => {
+        editBuilder.replace(pos1, "(");
+      },
+      { undoStopAfter: false, undoStopBefore: false }
+    );
 
-      let columnOffset = targetParentNode.lastChild.startPosition.column + 1;
+    await editor.edit(
+      (editBuilder) => {
+        editBuilder.replace(pos2, ")");
+      },
+      { undoStopAfter: false, undoStopBefore: false }
+    );
 
-      let ofs1 = editor.document.offsetAt(position) + 1;
-      let ofs2 = ofs1 + changeEvent.contentChanges[0].text.length;
+    let columnOffset =
+      this.targetNode.startPosition.column -
+      changeEvent.contentChanges[0].text.length +
+      3;
 
-      pos1 = editor.document.positionAt(ofs1);
-      pos2 = editor.document.positionAt(ofs2);
+    await editor.edit(
+      (editBuilder) => {
+        editBuilder.replace(editor.selection.active, " ".repeat(columnOffset));
+      },
+      { undoStopAfter: false, undoStopBefore: false }
+    );
 
-      await editor.edit(
-        (editBuilder) => {
-          editBuilder.replace(
-            new vscode.Range(pos1, pos2),
-            "\n" + " ".repeat(columnOffset)
-          );
-        },
-        { undoStopAfter: false, undoStopBefore: false }
-      );
-    }
+    // тут типо вызывается функция которая пробелы после курсора до непробельного символа
+    await deleteSpacesAfterCoursor(editor);
   }
 }
-
-const targetTypes = [
-  "return_statement",
-  "assignment",
-  "augmented_assignment",
-  "comparison_operator",
-  "binary_operator",
-];

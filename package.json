@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -35,11 +35,14 @@
           ],
           "description": "Select standard docstring format"
         },
-
-
         "typing-assist.assistOptions": {
           "type": "array",
-          "default": ["stringSeparator", "docstringCompleter", "functionCompleter", "bracketingExpressionCompleter"],
+          "default": [
+            "stringSeparator",
+            "docstringCompleter",
+            "functionCompleter",
+            "bracketingExpressionCompleter"
+          ],
           "uniqueItems": true,
           "items": {
             "type": "string",
@@ -52,12 +55,6 @@
           },
           "description": "Enable/disable assist options"
         }
-    
-
-
-
-
-
       }
     }
   },
