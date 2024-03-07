@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -41,7 +41,8 @@
             "stringSeparator",
             "docstringCompleter",
             "functionCompleter",
-            "bracketingExpressionCompleter"
+            "bracketingExpressionCompleter",
+            "newlineSpaceRemover"
           ],
           "uniqueItems": true,
           "items": {
@@ -50,7 +51,8 @@
               "stringSeparator",
               "docstringCompleter",
               "functionCompleter",
-              "bracketingExpressionCompleter"
+              "bracketingExpressionCompleter",
+              "newlineSpaceRemover"
             ]
           },
           "description": "Enable/disable assist options"

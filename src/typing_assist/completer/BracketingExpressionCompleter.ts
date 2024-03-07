@@ -82,11 +82,20 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       solidThingTypes.includes(currentNode.type)
     );
 
+    const blackListOfLastChars = ["/", "*", "-", "+", "=", ">", "<", "\\"];
+
     return !!(
       isPositionInsideNode(position, this.targetNode) &&
       !hasParentWithType(currentNode, "parenthesized_expression") &&
       !hasParentWithType(currentNode, "argument_list") &&
-      !isCoursorInsideSolidThing
+      !hasParentWithType(currentNode, "call") &&
+      !isCoursorInsideSolidThing &&
+      !blackListOfLastChars.includes(
+        getLastNonSpaceCharacterInCurrentAndNextLine(
+          editor.document,
+          this.targetNode.startPosition.row
+        )
+      )
     );
   }
   async apply(context: Context): Promise<void> {
@@ -128,7 +137,69 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       { undoStopAfter: false, undoStopBefore: false }
     );
 
-    // тут типо вызывается функция которая пробелы после курсора до непробельного символа
     await deleteSpacesAfterCoursor(editor);
   }
+}
+
+/**
+ * Возвращает последний непробельный символ в строке.
+ * @param document Текстовый документ, в котором находится строка.
+ * @param lineNumber Номер строки, для которой нужно найти последний непробельный символ.
+ * @returns Последний непробельный символ в строке или "", если строка пуста или состоит только из пробелов.
+ */
+function getLastNonSpaceCharacterInLine(
+  document: vscode.TextDocument,
+  lineNumber: number
+): string {
+  const line = document.lineAt(lineNumber);
+  const lineText = line.text;
+
+  // Итерируемся с конца строки
+  for (let i = lineText.length - 1; i >= 0; i--) {
+    const char = lineText.charAt(i);
+    if (char !== " " && char !== "\t") {
+      return char;
+    }
+  }
+
+  // Если строка пуста или состоит только из пробелов, возвращаем null
+  return "";
+}
+
+/**
+ * Возвращает последний непробельный символ в текущей строке и следующей строке.
+ * @param document Текстовый документ, в котором находится строка.
+ * @param lineNumber Номер текущей строки, для которой нужно найти последний непробельный символ вместе со следующей строкой.
+ * @returns Последний непробельный символ в строке или "", если строки пусты или состоят только из пробелов.
+ */
+function getLastNonSpaceCharacterInCurrentAndNextLine(
+  document: vscode.TextDocument,
+  lineNumber: number
+): string {
+  // Получаем текущую строку
+  const currentLine = document.lineAt(lineNumber);
+  const currentLineText = currentLine.text;
+
+  // Получаем следующую строку, если она есть
+  const nextLineNumber = lineNumber + 1;
+  if (nextLineNumber >= document.lineCount) {
+    return getLastNonSpaceCharacterInLine(document, lineNumber);
+  }
+  const nextLine = document.lineAt(nextLineNumber);
+  const nextLineText = nextLine.text;
+
+  // Конкатенируем содержимое текущей и следующей строки
+  const concatenatedText =
+    currentLineText.trimRight() + nextLineText.trimLeft();
+
+  // Итерируемся с конца объединенной строки
+  for (let i = concatenatedText.length - 1; i >= 0; i--) {
+    const char = concatenatedText.charAt(i);
+    if (char !== " " && char !== "\t") {
+      return char;
+    }
+  }
+
+  // Если строка пуста или состоит только из пробелов, возвращаем пустую строку
+  return "";
 }

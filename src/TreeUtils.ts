@@ -67,6 +67,13 @@ export function isPositionInsideNode(
 export async function deleteSpacesAfterCoursor(
   editor: vscode.TextEditor
 ): Promise<void> {
+  // штука чтобы позиция адекватно обновилась
+  await editor.edit(
+    (editBuilder) => {
+      editBuilder.replace(editor.selection.active, "");
+    },
+    { undoStopAfter: false, undoStopBefore: false }
+  );
   let text = editor.document.getText();
   let startIndex = editor.document.offsetAt(editor.selection.active);
 

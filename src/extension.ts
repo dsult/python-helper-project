@@ -9,6 +9,7 @@ import {
   hasParentWithType,
   isPositionInsideNode,
 } from "./TreeUtils";
+import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -18,6 +19,7 @@ export async function activate(context: vscode.ExtensionContext) {
     new DocstringCompleter(),
     new FunctionCompleter(),
     new BracketingExpressionCompleter(),
+    new NewlineSpaceRemover(),
   ]);
 
   vscode.window.onDidChangeActiveTextEditor((e) => assistService.changeDoc(e));
