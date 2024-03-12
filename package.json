@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.1.11",
+  "version": "0.2.3",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -23,6 +23,11 @@
     "configuration": {
       "type": "object",
       "properties": {
+        "typing-assist.enableCursorDownAfterCommentLine": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic commenting feature."
+        },
         "typing-assist.docstringFormat": {
           "type": "string",
           "default": "NumPy",
@@ -34,6 +39,28 @@
             "Epytext"
           ],
           "description": "Select standard docstring format"
+        },
+        "typing-assist.assistOptions": {
+          "type": "array",
+          "default": [
+            "stringSeparator",
+            "docstringCompleter",
+            "functionCompleter",
+            "bracketingExpressionCompleter",
+            "newlineSpaceRemover"
+          ],
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "stringSeparator",
+              "docstringCompleter",
+              "functionCompleter",
+              "bracketingExpressionCompleter",
+              "newlineSpaceRemover"
+            ]
+          },
+          "description": "Enable/disable assist options"
         }
       }
     }
