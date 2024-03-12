@@ -9,10 +9,10 @@ import {
 } from "../../TreeUtils";
 
 /**
- * Ассист для нажатия ентра внутри строк
+ * оборачивает выражение в скобки при нажатии ентра если это нужно
  */
 export class BracketingExpressionCompleter implements ITypingAssist {
-  optionName: string = "bracketingExpressionCompleter";
+  optionName: string = "BracketingExpressionCompleter";
 
   /**
    * нода, которую мы собираемся оборачивать в скобки

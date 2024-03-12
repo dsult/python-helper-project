@@ -4,12 +4,9 @@ import { TypeAssistService } from "./typing_assist/TypeAssistService";
 import { DocstringCompleter } from "./typing_assist/completer/DocstringCompleter";
 import { FunctionCompleter } from "./typing_assist/completer/FunctionCompleter";
 import { BracketingExpressionCompleter } from "./typing_assist/completer/BracketingExpressionCompleter";
-import {
-  getParentWithType,
-  hasParentWithType,
-  isPositionInsideNode,
-} from "./TreeUtils";
 import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
+import { SyntaxNode } from "web-tree-sitter";
+import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -20,6 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
     new FunctionCompleter(),
     new BracketingExpressionCompleter(),
     new NewlineSpaceRemover(),
+    new CommentSeparator(),
   ]);
 
   vscode.window.onDidChangeActiveTextEditor((e) => assistService.changeDoc(e));
@@ -35,6 +33,40 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
+      const missingNodes: SyntaxNode[] = [];
+
+      function traverseTree(node: SyntaxNode): void {
+        node.children.forEach((n: SyntaxNode) => {
+          if (n.isMissing()) {
+            missingNodes.push(n);
+          }
+          traverseTree(n);
+        });
+      }
+
+      traverseTree(assistService.tree.rootNode);
+
+      const editor = vscode.window.activeTextEditor;
+      const document = vscode.workspace.textDocuments[0];
+
+      console.log(missingNodes);
+
+      const edits: { position: vscode.Position; newText: string }[] = [];
+
+      missingNodes.forEach((missingNode: SyntaxNode) => {
+        const position = document.positionAt(missingNode.startIndex);
+        edits.push({ position, newText: missingNode.type });
+      });
+
+      await editor?.edit(
+        (editBuilder) => {
+          edits.forEach(({ position, newText }) => {
+            editBuilder.replace(position, newText);
+          });
+        },
+        { undoStopAfter: false, undoStopBefore: false }
+      );
+
       const position = assistService.editor!.selection.active;
 
       const currentNode = assistService.tree.rootNode.descendantForPosition({
@@ -42,14 +74,14 @@ export async function activate(context: vscode.ExtensionContext) {
         column: position.character,
       });
 
-      //   console.log(assistService.tree.rootNode.toString());
+      //   //   console.log(assistService.tree.rootNode.toString());
 
       console.log({
         //   rootNodetext: assistService.tree.rootNode.text,
-        rootNodetoString: assistService.tree.rootNode.toString(),
+        // rootNodetoString: assistService.tree.rootNode.toString(),
         currentNode: currentNode,
-        // currentNodetype: currentNode.type,
-        // currentNodetext: currentNode.text,
+        currentNodetype: currentNode.type,
+        currentNodetext: currentNode.text,
         // currentNodeParenttype: currentNode.parent?.type,
         // currentNodeParenttext: currentNode.parent?.text,
       });

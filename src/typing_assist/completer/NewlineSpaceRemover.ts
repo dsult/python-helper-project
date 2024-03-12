@@ -2,10 +2,10 @@ import { Context, ITypingAssist } from "../types";
 import { deleteSpacesAfterCoursor, hasParentWithType } from "../../TreeUtils";
 
 /**
- * Ассист для нажатия ентра внутри строк
+ * удаляет пробелы после нажатия ентра внутри скобок
  */
 export class NewlineSpaceRemover implements ITypingAssist {
-  optionName: string = "newlineSpaceRemover";
+  optionName: string = "NewlineSpaceRemover";
 
   isApplicable(context: Context): Boolean {
     const editor = context.editor;
