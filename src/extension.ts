@@ -42,37 +42,44 @@ export async function activate(context: vscode.ExtensionContext) {
         column: position.character,
       });
 
-      console.log({
-        // rootNodetext: assistService.tree.rootNode.text,
-        // rootNodetoString: assistService.tree.rootNode.toString(),
-        currentNode: currentNode,
-        currentNodetype: currentNode.type,
-        currentNodetext: currentNode.text,
-        currentNodeParenttype: currentNode.parent?.type,
-        currentNodeParenttext: currentNode.parent?.text,
-      });
+      //   console.log(assistService.tree.rootNode.toString());
 
-      //   Надо найти ноду-правую часть от стейтмента
-      if (hasParentWithType(currentNode, "expression_statement")) {
-        let targetParentNode = getParentWithType(
-          currentNode,
-          "expression_statement"
-        );
-        console.log(targetParentNode?.firstChild?.lastChild?.text);
-        if (targetParentNode?.firstChild?.lastChild) {
-          let targetNode = targetParentNode.firstChild.lastChild;
-          if (isPositionInsideNode(position, targetNode)) {
-            console.log(
-              "все норм, мы внутри таргет ноды (думаю что пока не обрабатываю сложные случаи)"
-            );
-          } else {
-            console.log("мы не внутри нужной ноды");
-          }
-        }
-      }
+      console.log({
+        //   rootNodetext: assistService.tree.rootNode.text,
+        rootNodetoString: assistService.tree.rootNode.toString(),
+        currentNode: currentNode,
+        // currentNodetype: currentNode.type,
+        // currentNodetext: currentNode.text,
+        // currentNodeParenttype: currentNode.parent?.type,
+        // currentNodeParenttext: currentNode.parent?.text,
+      });
     }
   );
   context.subscriptions.push(disposable);
+
+  setContextByConfiguration(
+    "typing-assist.isCursorDownAfterCommentLineOn",
+    "typing-assist.enableCursorDownAfterCommentLine"
+  );
+
+  vscode.workspace.onDidChangeConfiguration((event) => {
+    if (
+      event.affectsConfiguration(
+        "typing-assist.enableCursorDownAfterCommentLine"
+      )
+    ) {
+      setContextByConfiguration(
+        "typing-assist.isCursorDownAfterCommentLineOn",
+        "typing-assist.enableCursorDownAfterCommentLine"
+      );
+    }
+  });
+}
+
+function setContextByConfiguration(context: string, configuration: string) {
+  const config = vscode.workspace.getConfiguration().get(configuration);
+
+  vscode.commands.executeCommand("setContext", context, config);
 }
 
 export function deactivate() {}

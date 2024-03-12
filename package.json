@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -23,6 +23,11 @@
     "configuration": {
       "type": "object",
       "properties": {
+        "typing-assist.enableCursorDownAfterCommentLine": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable automatic commenting feature."
+        },
         "typing-assist.docstringFormat": {
           "type": "string",
           "default": "NumPy",
