@@ -7,6 +7,7 @@ import { BracketingExpressionCompleter } from "./typing_assist/completer/Bracket
 import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
 import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
+import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -18,11 +19,13 @@ export async function activate(context: vscode.ExtensionContext) {
     new BracketingExpressionCompleter(),
     new NewlineSpaceRemover(),
     new CommentSeparator(),
+    new ReturnDedent(),
   ]);
 
   vscode.window.onDidChangeActiveTextEditor((e) => assistService.changeDoc(e));
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
+    // console.log(e);
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -33,58 +36,32 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      const missingNodes: SyntaxNode[] = [];
-
-      function traverseTree(node: SyntaxNode): void {
-        node.children.forEach((n: SyntaxNode) => {
-          if (n.isMissing()) {
-            missingNodes.push(n);
-          }
-          traverseTree(n);
-        });
+      class SampleInlayHintsProvider {
+        provideInlayHints(
+          document: any,
+          range: { start: { line: number; character: number } },
+          token: any
+        ) {
+          const position = new vscode.Position(
+            range.start.line,
+            range.start.character
+          );
+          const hint = new vscode.InlayHint(
+            position,
+            "some hint",
+            vscode.InlayHintKind.Type
+          );
+          return [hint];
+        }
       }
+      // await fillTreeSitterMissingNodes(assistService);
 
-      traverseTree(assistService.tree.rootNode);
+      const provider = new SampleInlayHintsProvider();
+      const selector = { scheme: "file", language: "python" };
 
-      const editor = vscode.window.activeTextEditor;
-      const document = vscode.workspace.textDocuments[0];
-
-      console.log(missingNodes);
-
-      const edits: { position: vscode.Position; newText: string }[] = [];
-
-      missingNodes.forEach((missingNode: SyntaxNode) => {
-        const position = document.positionAt(missingNode.startIndex);
-        edits.push({ position, newText: missingNode.type });
-      });
-
-      await editor?.edit(
-        (editBuilder) => {
-          edits.forEach(({ position, newText }) => {
-            editBuilder.replace(position, newText);
-          });
-        },
-        { undoStopAfter: false, undoStopBefore: false }
+      context.subscriptions.push(
+        vscode.languages.registerInlayHintsProvider(selector, provider)
       );
-
-      const position = assistService.editor!.selection.active;
-
-      const currentNode = assistService.tree.rootNode.descendantForPosition({
-        row: position.line,
-        column: position.character,
-      });
-
-      //   //   console.log(assistService.tree.rootNode.toString());
-
-      console.log({
-        //   rootNodetext: assistService.tree.rootNode.text,
-        // rootNodetoString: assistService.tree.rootNode.toString(),
-        currentNode: currentNode,
-        currentNodetype: currentNode.type,
-        currentNodetext: currentNode.text,
-        // currentNodeParenttype: currentNode.parent?.type,
-        // currentNodeParenttext: currentNode.parent?.text,
-      });
     }
   );
   context.subscriptions.push(disposable);
@@ -106,6 +83,42 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
   });
+}
+
+async function fillTreeSitterMissingNodes(assistService: TypeAssistService) {
+  const missingNodes: SyntaxNode[] = [];
+
+  function traverseTree(node: SyntaxNode): void {
+    node.children.forEach((n: SyntaxNode) => {
+      if (n.isMissing()) {
+        missingNodes.push(n);
+      }
+      traverseTree(n);
+    });
+  }
+
+  traverseTree(assistService.tree.rootNode);
+
+  const editor = vscode.window.activeTextEditor;
+  const document = vscode.workspace.textDocuments[0];
+
+  console.log(missingNodes);
+
+  const edits: { position: vscode.Position; newText: string }[] = [];
+
+  missingNodes.forEach((missingNode: SyntaxNode) => {
+    const position = document.positionAt(missingNode.startIndex);
+    edits.push({ position, newText: missingNode.type });
+  });
+
+  await editor?.edit(
+    (editBuilder) => {
+      edits.forEach(({ position, newText }) => {
+        editBuilder.replace(position, newText);
+      });
+    },
+    { undoStopAfter: false, undoStopBefore: false }
+  );
 }
 
 function setContextByConfiguration(context: string, configuration: string) {

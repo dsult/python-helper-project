@@ -1,4 +1,8 @@
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
+import {
+  deleteSpacesAfterCoursor,
+  updateSelectionActive,
+} from "../../TreeUtils";
 
 /**
  * Ассист для нажатия ентра внутри комментариев
@@ -26,19 +30,14 @@ export class CommentSeparator implements ITypingAssist {
         changeEvent.contentChanges[0].range.start
       ) &&
       currentNode.type === "comment" &&
-      currentNode.startPosition.column !== position.character
+      currentNode.startPosition.column !== position.character &&
+      currentNode.endPosition.column !== position.character + 1
     );
   }
   async apply(context: Context): Promise<void> {
     const editor = context.editor;
 
-    // штука чтобы позиция адекватно обновилась
-    await editor.edit(
-      (editBuilder) => {
-        editBuilder.replace(editor.selection.active, "");
-      },
-      { undoStopAfter: false, undoStopBefore: false }
-    );
+    await updateSelectionActive(editor);
 
     await editor.edit(
       (editBuilder) => {
@@ -46,5 +45,7 @@ export class CommentSeparator implements ITypingAssist {
       },
       { undoStopAfter: false, undoStopBefore: false }
     );
+
+    await deleteSpacesAfterCoursor(editor);
   }
 }

@@ -1,5 +1,9 @@
 import { Context, ITypingAssist } from "../types";
-import { deleteSpacesAfterCoursor, hasParentWithType } from "../../TreeUtils";
+import {
+  deleteSpacesAfterCoursor,
+  hasParentWithType,
+  updateSelectionActive,
+} from "../../TreeUtils";
 
 /**
  * удаляет пробелы после нажатия ентра внутри скобок
@@ -33,6 +37,7 @@ export class NewlineSpaceRemover implements ITypingAssist {
   async apply(context: Context): Promise<void> {
     let editor = context.editor;
 
+    await updateSelectionActive(editor);
     // тут типо вызывается функция которая пробелы после курсора до непробельного символа
     await deleteSpacesAfterCoursor(editor);
   }

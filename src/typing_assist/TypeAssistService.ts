@@ -82,7 +82,6 @@ export class TypeAssistService {
         });
       } else {
         // !!!!!!!!!!!!!!!!!!!!!А сюда вообще можно попасть?
-        // console.error("There is no editor set");
       }
     });
 
@@ -92,7 +91,7 @@ export class TypeAssistService {
   /**
    * Перебор ассистов, поиск подходящего под изменение
    */
-  processing(changeEvent: vscode.TextDocumentChangeEvent): void {
+  async processing(changeEvent: vscode.TextDocumentChangeEvent): Promise<void> {
     if (
       this.editor &&
       // не тригириться на ctrl+z, ctrl+shift+z
@@ -109,7 +108,8 @@ export class TypeAssistService {
 
       for (const assist of this.assistList) {
         if (isOn(assist.optionName) && assist.isApplicable(context)) {
-          assist.apply(context);
+          await assist.apply(context);
+          //   console.log(assist.optionName);
           break;
         }
       }

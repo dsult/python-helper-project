@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onLanguage:python"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -48,7 +48,8 @@
             "FunctionCompleter",
             "BracketingExpressionCompleter",
             "NewlineSpaceRemover",
-            "CommentSeparator"
+            "CommentSeparator",
+            "ReturnDedent"
           ],
           "uniqueItems": true,
           "items": {
@@ -59,7 +60,8 @@
               "FunctionCompleter",
               "BracketingExpressionCompleter",
               "NewlineSpaceRemover",
-              "CommentSeparator"
+              "CommentSeparator",
+              "ReturnDedent"
             ]
           },
           "description": "Enable/disable assist options"
