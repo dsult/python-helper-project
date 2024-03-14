@@ -19,7 +19,8 @@ export class ReturnDedent implements ITypingAssist {
     const editor = context.editor;
     const changeEvent = context.changeEvent;
     const position = editor.selection.active;
-    // надо проверять самый левый не пробельный символ
+
+    // надо проверять самый левый символ
     const leftNode = tree.rootNode.descendantForPosition(
       {
         row: position.line,
@@ -49,26 +50,23 @@ export class ReturnDedent implements ITypingAssist {
     }
   }
   async apply(context: Context): Promise<void> {
-    const tree = context.tree;
     const editor = context.editor;
     const changeEvent = context.changeEvent;
     let position = editor.selection.active;
-    if (!this.targetNode || this.targetNode.startPosition.column - 4 < 0) {
+    if (
+      !this.targetNode ||
+      this.targetNode.startPosition.column - 4 < 0 ||
+      this.targetNode.hasError()
+    ) {
       return;
     }
 
-    console.log("делейм дедент");
-    console.log(this.targetNode.startPosition.column - 4);
+    // console.log("делейм дедент");
+    // console.log(this.targetNode.startPosition.column - 4);
     const newStrStart = changeEvent.contentChanges[0].text.substring(
       0,
       this.targetNode.startPosition.column - 2
     );
-
-    // await editor.insertSnippet(
-    //     new vscode.SnippetString(closeQuoteText + '\n\t' + openQuoteText),
-    //     new vscode.Range(pos1, pos2),
-    //     { undoStopBefore: false, undoStopAfter: false, }
-    // );
 
     await updateSelectionActive(editor);
 

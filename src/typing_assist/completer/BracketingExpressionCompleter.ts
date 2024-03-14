@@ -75,20 +75,22 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       "integer",
       "identifier",
       "float",
-      //   "string",
+      // "string"
     ];
     const isCoursorInsideSolidThing = !!(
       currentNode.startIndex !== positionOffset &&
       solidThingTypes.includes(currentNode.type)
     );
 
-    const blackListOfLastChars = ["/", "*", "-", "+", "=", ">", "<", "\\"];
+    const blackListOfLastChars = ["/", "*", "-", "+", "=", ">", "<", "\\", ","];
 
     return !!(
       isPositionInsideNode(position, this.targetNode) &&
       !hasParentWithType(currentNode, "parenthesized_expression") &&
       !hasParentWithType(currentNode, "argument_list") &&
-      !hasParentWithType(currentNode, "call") &&
+      //   !hasParentWithType(currentNode, "call") &&
+      !hasParentWithType(currentNode, "list") &&
+      !hasParentWithType(currentNode, "dictionary") &&
       !isCoursorInsideSolidThing &&
       !blackListOfLastChars.includes(
         getLastNonSpaceCharacterInCurrentAndNextLine(
