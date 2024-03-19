@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished"
+    "onLanguage:python"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -43,21 +43,25 @@
         "typing-assist.assistOptions": {
           "type": "array",
           "default": [
-            "stringSeparator",
-            "docstringCompleter",
-            "functionCompleter",
-            "bracketingExpressionCompleter",
-            "newlineSpaceRemover"
+            "StringSeparator",
+            "DocstringCompleter",
+            "FunctionCompleter",
+            "BracketingExpressionCompleter",
+            "NewlineSpaceRemover",
+            "CommentSeparator",
+            "ReturnDedent"
           ],
           "uniqueItems": true,
           "items": {
             "type": "string",
             "enum": [
-              "stringSeparator",
-              "docstringCompleter",
-              "functionCompleter",
-              "bracketingExpressionCompleter",
-              "newlineSpaceRemover"
+              "StringSeparator",
+              "DocstringCompleter",
+              "FunctionCompleter",
+              "BracketingExpressionCompleter",
+              "NewlineSpaceRemover",
+              "CommentSeparator",
+              "ReturnDedent"
             ]
           },
           "description": "Enable/disable assist options"

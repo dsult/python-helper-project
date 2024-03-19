@@ -9,10 +9,10 @@ import {
 } from "../../TreeUtils";
 
 /**
- * Ассист для нажатия ентра внутри строк
+ * оборачивает выражение в скобки при нажатии ентра если это нужно
  */
 export class BracketingExpressionCompleter implements ITypingAssist {
-  optionName: string = "bracketingExpressionCompleter";
+  optionName: string = "BracketingExpressionCompleter";
 
   /**
    * нода, которую мы собираемся оборачивать в скобки
@@ -75,20 +75,22 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       "integer",
       "identifier",
       "float",
-      //   "string",
+      // "string"
     ];
     const isCoursorInsideSolidThing = !!(
       currentNode.startIndex !== positionOffset &&
       solidThingTypes.includes(currentNode.type)
     );
 
-    const blackListOfLastChars = ["/", "*", "-", "+", "=", ">", "<", "\\"];
+    const blackListOfLastChars = ["/", "*", "-", "+", "=", ">", "<", "\\", ","];
 
     return !!(
       isPositionInsideNode(position, this.targetNode) &&
       !hasParentWithType(currentNode, "parenthesized_expression") &&
       !hasParentWithType(currentNode, "argument_list") &&
-      !hasParentWithType(currentNode, "call") &&
+      //   !hasParentWithType(currentNode, "call") &&
+      !hasParentWithType(currentNode, "list") &&
+      !hasParentWithType(currentNode, "dictionary") &&
       !isCoursorInsideSolidThing &&
       !blackListOfLastChars.includes(
         getLastNonSpaceCharacterInCurrentAndNextLine(

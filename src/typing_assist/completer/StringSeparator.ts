@@ -7,7 +7,7 @@ import { hasParentWithType } from "../../TreeUtils";
  * Ассист для нажатия ентра внутри строк
  */
 export class StringSeparator implements ITypingAssist {
-  optionName: string = "stringSeparator";
+  optionName: string = "StringSeparator";
 
   isOn(): Boolean {
     const assistOptions = vscode.workspace

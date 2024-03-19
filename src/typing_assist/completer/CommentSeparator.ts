@@ -1,27 +1,27 @@
-import { Context, ITypingAssist } from "../types";
+import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
 import {
   deleteSpacesAfterCoursor,
-  hasParentWithType,
   updateSelectionActive,
 } from "../../TreeUtils";
 
 /**
- * удаляет пробелы после нажатия ентра внутри скобок
+ * Ассист для нажатия ентра внутри комментариев
  */
-export class NewlineSpaceRemover implements ITypingAssist {
-  optionName: string = "NewlineSpaceRemover";
+export class CommentSeparator implements ITypingAssist {
+  optionName: string = "CommentSeparator";
 
   isApplicable(context: Context): Boolean {
+    const tree = context.tree;
     const editor = context.editor;
     const changeEvent = context.changeEvent;
-
     const position = editor.selection.active;
-    const tree = context.tree;
+
     const currentNode = tree.rootNode.descendantForPosition({
       row: position.line,
       column: position.character,
-    });
+    }) as ExtendedSyntaxNode;
 
+    // проверка что это перенос строки + пробелы
     return !!(
       changeEvent.contentChanges.length === 1 &&
       /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
@@ -29,16 +29,23 @@ export class NewlineSpaceRemover implements ITypingAssist {
       editor.selection.active.isEqual(
         changeEvent.contentChanges[0].range.start
       ) &&
-      (hasParentWithType(currentNode, "parenthesized_expression") ||
-        hasParentWithType(currentNode, "call") ||
-        hasParentWithType(currentNode, "argument_list"))
+      currentNode.type === "comment" &&
+      currentNode.startPosition.column !== position.character &&
+      currentNode.endPosition.column !== position.character + 1
     );
   }
   async apply(context: Context): Promise<void> {
-    let editor = context.editor;
+    const editor = context.editor;
 
     await updateSelectionActive(editor);
-    // тут типо вызывается функция которая пробелы после курсора до непробельного символа
+
+    await editor.edit(
+      (editBuilder) => {
+        editBuilder.replace(editor.selection.active, "# ");
+      },
+      { undoStopAfter: false, undoStopBefore: false }
+    );
+
     await deleteSpacesAfterCoursor(editor);
   }
 }
