@@ -82,6 +82,7 @@ export class TypeAssistService {
         });
       } else {
         // !!!!!!!!!!!!!!!!!!!!!А сюда вообще можно попасть?
+        // console.log("дерево не сделалось???");
       }
     });
 
@@ -113,6 +114,12 @@ export class TypeAssistService {
           break;
         }
       }
+    } else {
+      //   console.log(
+      //     "yami ",
+      //     changeEvent.reason,
+      //     this.editor?.document.languageId
+      //   );
     }
   }
 }

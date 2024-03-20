@@ -8,6 +8,8 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
+import { Position } from "vscode";
+const fs = require("fs");
 
 let disposable: vscode.Disposable | undefined;
 
@@ -26,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
     // console.log(e);
+    // e -> TypingAssistData
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -36,32 +39,101 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      class SampleInlayHintsProvider {
-        provideInlayHints(
-          document: any,
-          range: { start: { line: number; character: number } },
-          token: any
-        ) {
-          const position = new vscode.Position(
-            range.start.line,
-            range.start.character
-          );
-          const hint = new vscode.InlayHint(
-            position,
-            "some hint",
-            vscode.InlayHintKind.Type
-          );
-          return [hint];
+      // Путь к файлу, который нужно прочитать
+      const filePath = __dirname + "/test1.txt";
+
+      // Переменная для хранения содержимого файла
+      let fileContent = "";
+      // Чтение файла
+      async function readFileContent(filePath: string): Promise<string> {
+        try {
+          const data = await fs.readFile(filePath, "utf8");
+          console.log(data);
+          return data;
+        } catch (err) {
+          console.error("Ошибка при чтении файла:", err);
+          throw err; // Перебрасываем ошибку дальше, если нужно обработать её выше по стеку вызовов
         }
       }
-      // await fillTreeSitterMissingNodes(assistService);
 
-      const provider = new SampleInlayHintsProvider();
-      const selector = { scheme: "file", language: "python" };
+      // Пример использования функции
+      readFileContent(filePath)
+        .then((content) => {
+          console.log(content);
+        })
+        .catch((error) => {
+          // Обработка ошибок чтения файла
+        });
+      // Разделяем текст на две части
+      //   const [startPart, endPart] = fileContent.split("-------------------\r\n");
+      //   console.log(startPart);
+      //   console.log(endPart);
+      //   console.log(123);
 
-      context.subscriptions.push(
-        vscode.languages.registerInlayHintsProvider(selector, provider)
-      );
+      //   // Функция для поиска и удаления тега, возвращает позицию тега и текст без тега
+      //   function extractTag(
+      //     text: string,
+      //     tag: string
+      //   ): { position: Position; textWithoutTag: string } {
+      //     const tagIndex = text.indexOf(`<${tag}>`);
+      //     if (tagIndex === -1) {
+      //       throw new Error(`Tag <${tag}> not found`);
+      //     }
+
+      //     // Вычисляем позицию тега
+      //     const linesBeforeTag = text.slice(0, tagIndex).split("\n");
+      //     const line = linesBeforeTag.length - 1;
+      //     const character = linesBeforeTag[linesBeforeTag.length - 1].length;
+
+      //     // Удаляем тег из текста
+      //     const textWithoutTag = text.replace(`<${tag}>`, "");
+
+      //     return {
+      //       position: new Position(line, character),
+      //       textWithoutTag,
+      //     };
+      //   }
+
+      //   // Извлекаем тег <\n> из первой части и запоминаем позицию
+      //   const { position: insertPosition, textWithoutTag: startText } =
+      //     extractTag(startPart, "\\n");
+
+      //   // Извлекаем тег <caret> из второй части и запоминаем позицию
+      //   const { position: caretPosition, textWithoutTag: endTextWithoutTag } =
+      //     extractTag(endPart, "caret");
+
+      //   // Корректируем текст второй части, добавляя перевод строки в позицию вставки
+      //   const endTextLines = endTextWithoutTag.split("\n");
+      //   endTextLines.splice(
+      //     insertPosition.line,
+      //     0,
+      //     insertPosition.character === 0
+      //       ? ""
+      //       : " ".repeat(insertPosition.character)
+      //   );
+      //   const endText = endTextLines.join("\r\n");
+
+      //   // Создаем объект с результатами
+      //   const obj = {
+      //     startText,
+      //     endText,
+      //     insertPosition,
+      //     insertText: "\n",
+      //     caretPosition: new Position(
+      //       caretPosition.line + 1,
+      //       caretPosition.character
+      //     ), // Учитываем новую строку после разделителя
+      //   };
+
+      //   console.log(obj);
+
+      //   const editor = assistService.editor!;
+      //   const position = editor.selection.active;
+      //   const currentNode = assistService.tree.rootNode.descendantForPosition({
+      //     row: position.line,
+      //     column: position.character,
+      //   });
+      //   console.log(currentNode);
     }
   );
   context.subscriptions.push(disposable);

@@ -39,7 +39,7 @@ export class StringSeparator implements ITypingAssist {
     return !!(
       changeEvent.contentChanges.length === 1 &&
       /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
-      changeEvent.contentChanges[0].rangeLength == 0 &&
+      changeEvent.contentChanges[0].rangeLength === 0 &&
       editor.selection.active.isEqual(
         changeEvent.contentChanges[0].range.start
       ) && // нода кавычка
@@ -142,11 +142,11 @@ export class StringSeparator implements ITypingAssist {
       const pos1 = editor.document.positionAt(ofs1);
       const pos2 = editor.document.positionAt(ofs2);
 
-      // await editor.insertSnippet(
-      //     new vscode.SnippetString(closeQuoteText + '\n\t' + openQuoteText),
+      //   await editor.insertSnippet(
+      //     new vscode.SnippetString(closeQuoteText + "\n\t" + openQuoteText),
       //     new vscode.Range(pos1, pos2),
-      //     { undoStopBefore: false, undoStopAfter: false, }
-      // );
+      //     { undoStopBefore: false, undoStopAfter: false }
+      //   );
 
       await editor.edit(
         (editBuilder) => {
