@@ -1,0 +1,4 @@
+print('some<\n> test')
+-------------------
+print('some'
+      '<caret> test')

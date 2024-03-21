@@ -25,7 +25,7 @@ export class DocstringCompleter implements ITypingAssist {
     return !!(
       changeEvent.contentChanges.length === 1 &&
       /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
-      changeEvent.contentChanges[0].rangeLength == 0 &&
+      changeEvent.contentChanges[0].rangeLength === 0 &&
       // проверка что мы внутри тройной докстроки
       currentNode.typeId === this.QUOTE_NODE_ID &&
       currentNode.parent !== null &&
@@ -51,10 +51,10 @@ export class DocstringCompleter implements ITypingAssist {
       .get("typing-assist.docstringFormat");
 
     if (
-      currentNode.parent?.parent?.parent?.parent?.type ==
+      currentNode.parent?.parent?.parent?.parent?.type ===
         "function_definition" &&
       // (может ли тут быть обращение к несуществующему элементу???)
-      currentNode.parent.parent.parent.parent.children[2].type ==
+      currentNode.parent.parent.parent.parent.children[2].type ===
         "parameters" &&
       // проверка что перед стрингой нет ничего в теле функции
       currentNode.parent.parent.previousSibling === null &&

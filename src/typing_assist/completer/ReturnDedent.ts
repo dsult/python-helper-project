@@ -35,7 +35,7 @@ export class ReturnDedent implements ITypingAssist {
     if (
       changeEvent.contentChanges.length === 1 &&
       /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
-      changeEvent.contentChanges[0].rangeLength == 0 &&
+      changeEvent.contentChanges[0].rangeLength === 0 &&
       editor.selection.active.isEqual(
         changeEvent.contentChanges[0].range.start
       ) &&

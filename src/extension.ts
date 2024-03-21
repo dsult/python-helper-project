@@ -8,6 +8,8 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
+import { Position } from "vscode";
+import { getFoldersAndFiles } from "./test/testUtils";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -26,6 +28,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
     // console.log(e);
+    // e -> TypingAssistData
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -36,32 +39,28 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      class SampleInlayHintsProvider {
-        provideInlayHints(
-          document: any,
-          range: { start: { line: number; character: number } },
-          token: any
-        ) {
-          const position = new vscode.Position(
-            range.start.line,
-            range.start.character
-          );
-          const hint = new vscode.InlayHint(
-            position,
-            "some hint",
-            vscode.InlayHintKind.Type
-          );
-          return [hint];
-        }
+      // Путь к файлу, который нужно прочитать
+      const dirPath = __dirname + "/test/test_files";
+      const FoldersAndFiles = getFoldersAndFiles(dirPath);
+
+      for (const folder in FoldersAndFiles) {
+        console.log(`Folder: ${folder}`);
+        const files = FoldersAndFiles[folder];
+        console.log(`Files:`);
+        files.forEach((file: any) => {
+          console.log(`- ${file}`);
+        });
       }
-      // await fillTreeSitterMissingNodes(assistService);
 
-      const provider = new SampleInlayHintsProvider();
-      const selector = { scheme: "file", language: "python" };
+      // Функция для чтения файла и возврата его содержимого в виде строки
 
-      context.subscriptions.push(
-        vscode.languages.registerInlayHintsProvider(selector, provider)
-      );
+      //   const editor = assistService.editor!;
+      //   const position = editor.selection.active;
+      //   const currentNode = assistService.tree.rootNode.descendantForPosition({
+      //     row: position.line,
+      //     column: position.character,
+      //   });
+      //   console.log(currentNode);
     }
   );
   context.subscriptions.push(disposable);
