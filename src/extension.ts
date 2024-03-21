@@ -9,7 +9,7 @@ import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 import { Position } from "vscode";
-const fs = require("fs");
+import { getFoldersAndFiles } from "./test/testUtils";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -40,92 +40,19 @@ export async function activate(context: vscode.ExtensionContext) {
     "python-helper-project.test",
     async () => {
       // Путь к файлу, который нужно прочитать
-      const filePath = __dirname + "/test1.txt";
+      const dirPath = __dirname + "/test/test_files";
+      const FoldersAndFiles = getFoldersAndFiles(dirPath);
 
-      // Переменная для хранения содержимого файла
-      let fileContent = "";
-      // Чтение файла
-      async function readFileContent(filePath: string): Promise<string> {
-        try {
-          const data = await fs.readFile(filePath, "utf8");
-          console.log(data);
-          return data;
-        } catch (err) {
-          console.error("Ошибка при чтении файла:", err);
-          throw err; // Перебрасываем ошибку дальше, если нужно обработать её выше по стеку вызовов
-        }
+      for (const folder in FoldersAndFiles) {
+        console.log(`Folder: ${folder}`);
+        const files = FoldersAndFiles[folder];
+        console.log(`Files:`);
+        files.forEach((file: any) => {
+          console.log(`- ${file}`);
+        });
       }
 
-      // Пример использования функции
-      readFileContent(filePath)
-        .then((content) => {
-          console.log(content);
-        })
-        .catch((error) => {
-          // Обработка ошибок чтения файла
-        });
-      // Разделяем текст на две части
-      //   const [startPart, endPart] = fileContent.split("-------------------\r\n");
-      //   console.log(startPart);
-      //   console.log(endPart);
-      //   console.log(123);
-
-      //   // Функция для поиска и удаления тега, возвращает позицию тега и текст без тега
-      //   function extractTag(
-      //     text: string,
-      //     tag: string
-      //   ): { position: Position; textWithoutTag: string } {
-      //     const tagIndex = text.indexOf(`<${tag}>`);
-      //     if (tagIndex === -1) {
-      //       throw new Error(`Tag <${tag}> not found`);
-      //     }
-
-      //     // Вычисляем позицию тега
-      //     const linesBeforeTag = text.slice(0, tagIndex).split("\n");
-      //     const line = linesBeforeTag.length - 1;
-      //     const character = linesBeforeTag[linesBeforeTag.length - 1].length;
-
-      //     // Удаляем тег из текста
-      //     const textWithoutTag = text.replace(`<${tag}>`, "");
-
-      //     return {
-      //       position: new Position(line, character),
-      //       textWithoutTag,
-      //     };
-      //   }
-
-      //   // Извлекаем тег <\n> из первой части и запоминаем позицию
-      //   const { position: insertPosition, textWithoutTag: startText } =
-      //     extractTag(startPart, "\\n");
-
-      //   // Извлекаем тег <caret> из второй части и запоминаем позицию
-      //   const { position: caretPosition, textWithoutTag: endTextWithoutTag } =
-      //     extractTag(endPart, "caret");
-
-      //   // Корректируем текст второй части, добавляя перевод строки в позицию вставки
-      //   const endTextLines = endTextWithoutTag.split("\n");
-      //   endTextLines.splice(
-      //     insertPosition.line,
-      //     0,
-      //     insertPosition.character === 0
-      //       ? ""
-      //       : " ".repeat(insertPosition.character)
-      //   );
-      //   const endText = endTextLines.join("\r\n");
-
-      //   // Создаем объект с результатами
-      //   const obj = {
-      //     startText,
-      //     endText,
-      //     insertPosition,
-      //     insertText: "\n",
-      //     caretPosition: new Position(
-      //       caretPosition.line + 1,
-      //       caretPosition.character
-      //     ), // Учитываем новую строку после разделителя
-      //   };
-
-      //   console.log(obj);
+      // Функция для чтения файла и возврата его содержимого в виде строки
 
       //   const editor = assistService.editor!;
       //   const position = editor.selection.active;

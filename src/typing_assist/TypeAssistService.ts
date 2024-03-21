@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { Context, ITypingAssist } from "./types";
 import Parser from "web-tree-sitter"; // Import the module with a default import
+import { resolve } from "path";
 
 export class TypeAssistService {
   constructor(
@@ -22,9 +23,12 @@ export class TypeAssistService {
 
     let editor = vscode.window.activeTextEditor;
 
-    // вот тут едитора может не быть
-    const sourceCode = editor!.document.getText();
-    let tree = parser.parse(sourceCode);
+    let tree: Parser.Tree;
+    if (editor) {
+      tree = parser.parse(editor.document.getText());
+    } else {
+      tree = parser.parse("");
+    }
 
     return new TypeAssistService(assistList, tree, parser, editor);
   }
