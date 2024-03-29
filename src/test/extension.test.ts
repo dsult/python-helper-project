@@ -7,6 +7,7 @@ import {
   Position,
   Selection,
   SnippetString,
+  Disposable,
 } from "vscode";
 import { TypeAssistService } from "../typing_assist/TypeAssistService";
 import { CommentSeparator } from "../typing_assist/completer/CommentSeparator";
@@ -41,7 +42,11 @@ async function withRandomFileEditor(
 
 const dirPath = __dirname + "/test_files";
 const FoldersAndFiles = getFoldersAndFiles(dirPath);
+
 for (const suiteName in FoldersAndFiles) {
+  //   if (suiteName !== "CommentSeparator") {
+  //     continue;
+  //   }
   const testNames = FoldersAndFiles[suiteName];
   makeSuite(suiteName, testNames);
 }
@@ -73,6 +78,8 @@ function makeSuite(suiteName: string, testNames: any[]) {
         const startText = obj.startText;
         const endText = obj.endText;
         const offset = obj.insertOffset;
+        const insertText = obj.insertText;
+        const caretOffset = obj.caretOffset;
 
         if (!assistService) {
           throw new Error("TypeAssistService is not initialized.");
@@ -83,17 +90,29 @@ function makeSuite(suiteName: string, testNames: any[]) {
 
           const finishedPromise = new DeferredPromise<void>();
 
-          workspace.onDidChangeTextDocument(async (e) => {
-            await assistService.processing(e);
+          let changeDocumentSubscription: Disposable;
 
-            // assert.strictEqual(doc.getText(), doc.getText());
-            assert.strictEqual(doc.getText(), endText);
-            assert.ok(doc.isDirty);
+          changeDocumentSubscription = workspace.onDidChangeTextDocument(
+            async (e) => {
+              changeDocumentSubscription.dispose();
+              try {
+                await assistService.processing(e);
 
-            await finishedPromise.complete();
-          });
+                assert.strictEqual(doc.getText(), endText);
+                assert.strictEqual(
+                  doc.offsetAt(editor.selection.active),
+                  caretOffset,
+                  "caret position"
+                );
+                assert.ok(doc.isDirty);
+                finishedPromise.complete();
+              } catch (error) {
+                finishedPromise.error(error);
+              }
+            }
+          );
 
-          await editor.insertSnippet(new SnippetString("\n"));
+          await editor.insertSnippet(new SnippetString(insertText));
 
           await finishedPromise.p;
         });
@@ -101,98 +120,3 @@ function makeSuite(suiteName: string, testNames: any[]) {
     });
   });
 }
-
-// suite("testsute", () => {
-//   let assistService: TypeAssistService;
-
-//   setup(async () => {
-//     assistService = await TypeAssistService.init([
-//       new StringSeparator(),
-//       new DocstringCompleter(),
-//       new FunctionCompleter(),
-//       new BracketingExpressionCompleter(),
-//       new NewlineSpaceRemover(),
-//       new CommentSeparator(),
-//       new ReturnDedent(),
-//     ]);
-//     window.onDidChangeActiveTextEditor((e) => assistService.changeDoc(e));
-//   });
-
-//   // const testName = testNames
-//   test("falsetest", async () => {
-//     const filePath =
-//       __dirname + "/test_files/CommentSeparator/test4_break.gold";
-//     const obj = await readTestFile(filePath);
-
-//     const startText = obj.startText;
-//     const endText = obj.endText;
-//     const offset = obj.insertOffset;
-
-//     if (!assistService) {
-//       throw new Error("TypeAssistService is not initialized.");
-//     }
-//     return withRandomFileEditor(startText, async (editor, doc) => {
-//       const insertPosition = editor.document.positionAt(offset);
-//       editor.selection = new Selection(insertPosition, insertPosition);
-
-//       const finishedPromise = new DeferredPromise<void>();
-
-//       workspace.onDidChangeTextDocument(async (e) => {
-//         await assistService.processing(e);
-
-//         assert.strictEqual(doc.getText(), endText);
-//         assert.ok(doc.isDirty);
-
-//         await finishedPromise.complete();
-//       });
-
-//       await editor.insertSnippet(new SnippetString("\n"));
-
-//       await finishedPromise.p;
-//     });
-//   });
-// });
-
-// suite("CommentSeparator", async () => {
-//   const obj = {
-//     startText: "# some text",
-//     endText: "# some\r\n# text",
-//     insertPosition: new Position(0, 6),
-//     insertText: "\n",
-//     caretPosition: new Position(1, 2),
-//   };
-
-//   test("test simple", async () => {
-//     const insertPosition = new Position(0, 6);
-
-//     const startText = "# some text";
-//     const endText = "# some\r\n# text2";
-
-//     return withRandomFileEditor(startText, async (editor, doc) => {
-//       //     console.log(
-//       //     `(${editor.selection.active.line}, ${editor.selection.active.character})`
-//       //   );
-//       const assistService = await TypeAssistService.init([
-//         new CommentSeparator(),
-//       ]);
-
-//       editor.selection = new Selection(insertPosition, insertPosition);
-
-//       const finishedPromise = new DeferredPromise<void>();
-
-//       workspace.onDidChangeTextDocument(async (e) => {
-//         await assistService.processing(e);
-
-//         assert.strictEqual(doc.getText(), endText);
-//         assert.ok(doc.isDirty);
-
-//         await finishedPromise.complete();
-//       });
-
-//       await editor.insertSnippet(new SnippetString("\n"));
-
-//       await finishedPromise.p;
-//     });
-//   });
-//   return;
-// });

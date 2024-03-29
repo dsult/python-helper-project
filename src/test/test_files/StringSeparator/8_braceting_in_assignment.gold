@@ -1,0 +1,4 @@
+text = 'some<\n> test'
+-------------------
+text = ('some'
+        '<caret> test')

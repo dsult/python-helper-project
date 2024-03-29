@@ -8,8 +8,6 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
-import { Position } from "vscode";
-import { getFoldersAndFiles } from "./test/testUtils";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -39,28 +37,13 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      // Путь к файлу, который нужно прочитать
-      const dirPath = __dirname + "/test/test_files";
-      const FoldersAndFiles = getFoldersAndFiles(dirPath);
-
-      for (const folder in FoldersAndFiles) {
-        console.log(`Folder: ${folder}`);
-        const files = FoldersAndFiles[folder];
-        console.log(`Files:`);
-        files.forEach((file: any) => {
-          console.log(`- ${file}`);
-        });
-      }
-
-      // Функция для чтения файла и возврата его содержимого в виде строки
-
-      //   const editor = assistService.editor!;
-      //   const position = editor.selection.active;
-      //   const currentNode = assistService.tree.rootNode.descendantForPosition({
-      //     row: position.line,
-      //     column: position.character,
-      //   });
-      //   console.log(currentNode);
+      const editor = assistService.editor!;
+      const position = editor.selection.active;
+      const currentNode = assistService.tree.rootNode.descendantForPosition({
+        row: position.line,
+        column: position.character,
+      });
+      console.log(currentNode);
     }
   );
   context.subscriptions.push(disposable);

@@ -1,0 +1,27 @@
+def f(self, var1, var2, *args, long_var_name="hi", only_seldom_used_keyword: int = 0, **kwargs) -> int:
+    """<\n>"""
+-------------------
+def f(self, var1, var2, *args, long_var_name="hi", only_seldom_used_keyword: int = 0, **kwargs) -> int:
+    """
+    
+    
+    Parameters
+    ----------
+    var1: Any
+        <caret>
+    var2: Any
+        
+    *args: iterable
+        
+    long_var_name: Any = "hi"
+        
+    only_seldom_used_keyword: int = 0
+        
+    **kwargs: dict
+        
+    
+    Returns
+    -------
+    int
+    
+    """

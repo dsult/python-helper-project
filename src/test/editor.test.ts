@@ -6,6 +6,7 @@
 import * as assert from "assert";
 import {
   commands,
+  Disposable,
   env,
   Position,
   Range,
@@ -57,7 +58,7 @@ suite("vscode API - editors", () => {
   //       });
   //     });
   //   }
-  return;
+
   async function withRandomFileEditor(
     initialContents: string,
     run: (editor: TextEditor, doc: TextDocument) => Thenable<void>
@@ -77,7 +78,7 @@ suite("vscode API - editors", () => {
       return deleteFile(file);
     }
   }
-
+  return;
   test("new test whith some assists", () => {
     return withRandomFileEditor("# some      text", async (editor, doc) => {
       //     console.log(
@@ -92,14 +93,22 @@ suite("vscode API - editors", () => {
 
       const finishedPromise = new DeferredPromise<void>();
 
-      workspace.onDidChangeTextDocument(async (e) => {
-        await assistService.processing(e);
+      let changeDocumentSubscription: Disposable; // Переменная для хранения подписки
 
-        assert.strictEqual(doc.getText(), "# some\r\n# text");
-        assert.ok(doc.isDirty);
-
-        await finishedPromise.complete();
-      });
+      changeDocumentSubscription = workspace.onDidChangeTextDocument(
+        async (e) => {
+          try {
+            await assistService.processing(e);
+            assert.strictEqual(doc.getText(), "# some\r\n# text123");
+            assert.ok(doc.isDirty);
+            finishedPromise.complete();
+          } catch (error) {
+            finishedPromise.error(error); // Отклоняем обещание с ошибкой
+          } finally {
+            changeDocumentSubscription.dispose(); // Отписываемся от события
+          }
+        }
+      );
 
       await editor.insertSnippet(new SnippetString("\n"));
 

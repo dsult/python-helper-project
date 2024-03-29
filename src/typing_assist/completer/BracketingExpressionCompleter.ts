@@ -86,7 +86,16 @@ export class BracketingExpressionCompleter implements ITypingAssist {
 
     return !!(
       isPositionInsideNode(position, this.targetNode) &&
-      !hasParentWithType(currentNode, "parenthesized_expression") &&
+      //   Очень надеюсь, что никому не придется разбираться в этом условии,
+      //   но если что, оно решает проблему из BracketingExpressionCompleter/2_bracket_bug.gold
+      !(
+        hasParentWithType(currentNode, "parenthesized_expression") &&
+        !(
+          currentNode.parent &&
+          currentNode.type === "(" &&
+          !hasParentWithType(currentNode.parent, "parenthesized_expression")
+        )
+      ) &&
       !hasParentWithType(currentNode, "argument_list") &&
       //   !hasParentWithType(currentNode, "call") &&
       !hasParentWithType(currentNode, "list") &&

@@ -1,0 +1,6 @@
+class A:
+    def f<()>
+-------------------
+class A:
+    def f(self<caret>):
+        pass

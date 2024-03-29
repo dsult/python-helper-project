@@ -1,0 +1,10 @@
+class A:
+    def f1<()>
+    def f2(self):
+        pass
+-------------------
+class A:
+    def f1(self<caret>):
+        pass
+    def f2(self):
+        pass

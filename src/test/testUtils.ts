@@ -42,12 +42,27 @@ export async function readTestFile(filePath: string) {
     };
   }
 
-  // Извлекаем тег <\n> из первой части и запоминаем позицию
+  function getContentBetweenAngleBrackets(input: string): string {
+    const startIndex = input.indexOf("<");
+    if (startIndex === -1) {
+      throw new Error(`symbol < not found`);
+    }
+    const endIndex = input.indexOf(">", startIndex + 1);
+    if (endIndex === -1) {
+      throw new Error(`symbol > not found`);
+    }
+    return input.substring(startIndex + 1, endIndex);
+  }
+
+  let insertText = getContentBetweenAngleBrackets(startPart);
   const { offset: insertOffset, textWithoutTag: startText } = extractTag(
     startPart,
-    "\\n"
+    insertText
   );
 
+  if (insertText === "\\n") {
+    insertText = "\n";
+  }
   // Извлекаем тег <caret> из второй части и запоминаем позицию
   const { offset: caretOffset, textWithoutTag: endText } = extractTag(
     endPart,
@@ -60,7 +75,7 @@ export async function readTestFile(filePath: string) {
     endText,
     insertOffset,
     caretOffset,
-    insertText: "\n",
+    insertText,
   };
   return obj;
 }
