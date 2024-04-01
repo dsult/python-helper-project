@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
 import { Context, ExtendedSyntaxNode, ITypingAssist } from "../types";
 import { Point, SyntaxNode } from "web-tree-sitter";
-import { hasParentWithType } from "../../TreeUtils";
+import {
+  getActiveDocumentIndentationType,
+  hasParentWithType,
+} from "../../TreeUtils";
 
 /**
  * Ассист для нажатия ентра внутри строк
@@ -142,21 +145,60 @@ export class StringSeparator implements ITypingAssist {
       const pos1 = editor.document.positionAt(ofs1);
       const pos2 = editor.document.positionAt(ofs2);
 
-      //   await editor.insertSnippet(
-      //     new vscode.SnippetString(closeQuoteText + "\n\t" + openQuoteText),
-      //     new vscode.Range(pos1, pos2),
-      //     { undoStopBefore: false, undoStopAfter: false }
-      //   );
+      await editor.edit(
+        (editBuilder) => {
+          editBuilder.replace(new vscode.Range(pos1, pos1), closeQuoteText);
+        },
+        { undoStopAfter: false, undoStopBefore: false }
+      );
+
+      await editor.edit(
+        (editBuilder) => {
+          editBuilder.replace(new vscode.Range(pos2, pos2), openQuoteText);
+        },
+        { undoStopAfter: false, undoStopBefore: false }
+      );
+
+      columnOffset =
+        stringtNode.startPosition.column -
+        changeEvent.contentChanges[0].text.length +
+        3;
+
+      if (columnOffset < 0) {
+        columnOffset = 0;
+      }
+
+      let replaceText: string;
+
+      const indentationType = getActiveDocumentIndentationType();
+      if (indentationType === "Tabs") {
+        const repColumnOffset = columnOffset - 1;
+        replaceText =
+          "\t".repeat(repColumnOffset / 4) + " ".repeat(repColumnOffset % 4);
+      } else {
+        replaceText = " ".repeat(columnOffset);
+      }
+      console.log(editor.options.insertSpaces);
 
       await editor.edit(
         (editBuilder) => {
           editBuilder.replace(
-            new vscode.Range(pos1, pos2),
-            closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText
+            editor.selection.active.translate(0, -openQuoteText.length),
+            replaceText
           );
         },
         { undoStopAfter: false, undoStopBefore: false }
       );
+
+      //   await editor.edit(
+      //     (editBuilder) => {
+      //       editBuilder.replace(
+      //         new vscode.Range(pos1, pos2),
+      //         closeQuoteText + "\n" + " ".repeat(columnOffset) + openQuoteText
+      //       );
+      //     },
+      //     { undoStopAfter: false, undoStopBefore: false }
+      //   );
     }
   }
 

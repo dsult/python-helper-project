@@ -18,6 +18,10 @@
       {
         "command": "python-helper-project.test",
         "title": "Test cmd"
+      },
+      {
+        "command": "python-helper-project.newDelete",
+        "title": "Test cmd"
       }
     ],
     "configuration": {

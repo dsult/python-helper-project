@@ -3,6 +3,7 @@ import { Context, ITypingAssist } from "../types";
 import { SyntaxNode } from "web-tree-sitter";
 import {
   deleteSpacesAfterCoursor,
+  getActiveDocumentIndentationType,
   getParentWithType,
   hasParentWithType,
   isPositionInsideNode,
@@ -141,9 +142,23 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       changeEvent.contentChanges[0].text.length +
       3;
 
+    if (columnOffset < 0) {
+      columnOffset = 0;
+    }
+
+    let replaceText: string;
+
+    const indentationType = getActiveDocumentIndentationType();
+    if (indentationType === "Tabs") {
+      replaceText =
+        "\t".repeat(columnOffset / 4) + " ".repeat(columnOffset % 4);
+    } else {
+      replaceText = " ".repeat(columnOffset);
+    }
+
     await editor.edit(
       (editBuilder) => {
-        editBuilder.replace(editor.selection.active, " ".repeat(columnOffset));
+        editBuilder.replace(editor.selection.active, replaceText);
       },
       { undoStopAfter: false, undoStopBefore: false }
     );

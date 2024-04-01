@@ -108,3 +108,22 @@ export async function updateSelectionActive(editor: vscode.TextEditor) {
     { undoStopAfter: false, undoStopBefore: false }
   );
 }
+
+export function getActiveDocumentIndentationType(): string | undefined {
+  // Получаем активный текстовый редактор
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showErrorMessage("No active text editor");
+    return;
+  }
+
+  // Получаем настройки форматирования для активного документа
+  const formattingOptions = editor.options;
+
+  // Проверяем тип отступа (табы или пробелы)
+  if (formattingOptions.insertSpaces === true) {
+    return "Spaces";
+  } else {
+    return "Tabs";
+  }
+}

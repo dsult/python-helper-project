@@ -150,7 +150,27 @@ def f():
 
 - 0.2.8
 
+- попытка в регулирование табовых индентов
+- новый ctrl+backspace
+
+- 0.2.9
+
 ## [Unreleased]
+
+- ```
+  print(s, 1<caret>23)
+  ```
+  удаление тригерится
+
+```
+
+- `rejected promise not handled within 1 second: RangeError: Invalid count value: -1
+extensionHostProcess.js:144
+stack trace: RangeError: Invalid count value: -1
+	at String.repeat (<anonymous>)
+	at BracketingExpressionCompleter.apply (c:\Users\huawei\python-helper-project\out\typing_assist\completer\BracketingExpressionCompleter.js:91:31)
+	at async TypeAssistService.processing (c:\Users\huawei\python-helper-project\out\typing_assist\TypeAssistService.js:129:21)`
+- - (на кнтрл+z BracketingExpressionCompleter)
 
 - подумать про обрезание пробелов при переносе строки когда уже нормальные отступы
 
@@ -169,6 +189,8 @@ def f():
 - def def **()** тригерит ассист, дерево думает что второй деф это identifier
 - есть проблемы с **не**пробельной табуляцией
 - fr\\rf строки не обрабатываются
+
+```
 
 ```
 

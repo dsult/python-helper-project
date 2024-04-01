@@ -44,6 +44,79 @@ export async function activate(context: vscode.ExtensionContext) {
         column: position.character,
       });
       console.log(currentNode);
+      console.log(assistService.tree.rootNode);
+    }
+  );
+  context.subscriptions.push(disposable);
+
+  disposable = vscode.commands.registerCommand(
+    "python-helper-project.newDelete",
+    async () => {
+      const editor = assistService.editor!;
+      const position = editor.selection.active;
+
+      if (position.character === 0) {
+        vscode.commands.executeCommand("deleteWordLeft");
+        return;
+      }
+
+      const currentNode = assistService.tree.rootNode.descendantForPosition(
+        {
+          row: position.line,
+          column: position.character - 1,
+        },
+        {
+          row: position.line,
+          column: position.character,
+        }
+      );
+
+      const leftPosition = position.translate(0, -1);
+      const leftCharacter = editor.document.getText(
+        new vscode.Range(leftPosition, position)
+      );
+
+      if (
+        leftCharacter === " " ||
+        !(currentNode.previousNamedSibling && currentNode.parent)
+      ) {
+        vscode.commands.executeCommand("deleteWordLeft");
+        return;
+      }
+
+      console.log(currentNode.type);
+      console.log(currentNode.parent.type);
+
+      if (
+        currentNode.parent.type === "binary_operator" ||
+        currentNode.parent.type === "assignment" ||
+        currentNode.parent.type === "parameters" ||
+        currentNode.parent.type === "tuple" ||
+        currentNode.parent.type === "argument_list"
+      ) {
+        await editor.edit(
+          (editBuilder) => {
+            if (currentNode.previousNamedSibling) {
+              editBuilder.replace(
+                new vscode.Range(
+                  new vscode.Position(
+                    currentNode.previousNamedSibling.endPosition.row,
+                    currentNode.previousNamedSibling.endPosition.column
+                  ),
+                  editor.selection.active
+                ),
+                ""
+              );
+            }
+          },
+          { undoStopAfter: false, undoStopBefore: false }
+        );
+
+        return;
+      } else {
+        vscode.commands.executeCommand("deleteWordLeft");
+        return;
+      }
     }
   );
   context.subscriptions.push(disposable);
