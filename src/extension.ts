@@ -52,13 +52,23 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.newDelete",
     async () => {
-      const editor = assistService.editor!;
-      const position = editor.selection.active;
+      const editor = assistService.editor;
 
+      if (!editor) {
+        vscode.commands.executeCommand("deleteWordLeft");
+        return;
+      }
+
+      const position = editor.selection.active;
+      //   проверка на то что нужно удалять пробелы с ентрами
       if (position.character === 0) {
         vscode.commands.executeCommand("deleteWordLeft");
         return;
       }
+      let leftPosition = position.translate(0, -1);
+      const leftCharacter = editor.document.getText(
+        new vscode.Range(leftPosition, position)
+      );
 
       const currentNode = assistService.tree.rootNode.descendantForPosition(
         {
@@ -71,28 +81,21 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       );
 
-      const leftPosition = position.translate(0, -1);
-      const leftCharacter = editor.document.getText(
-        new vscode.Range(leftPosition, position)
-      );
-
-      if (
-        leftCharacter === " " ||
-        !(currentNode.previousNamedSibling && currentNode.parent)
-      ) {
+      if (!(currentNode.previousNamedSibling && currentNode.parent)) {
         vscode.commands.executeCommand("deleteWordLeft");
         return;
       }
-
-      console.log(currentNode.type);
-      console.log(currentNode.parent.type);
+      if (leftCharacter === " ") {
+      }
+      //   console.log(currentNode.type);
+      //   console.log(currentNode.parent.type);
 
       if (
         currentNode.parent.type === "binary_operator" ||
-        currentNode.parent.type === "assignment" ||
+        currentNode.parent.type === "argument_list" ||
         currentNode.parent.type === "parameters" ||
-        currentNode.parent.type === "tuple" ||
-        currentNode.parent.type === "argument_list"
+        // currentNode.parent.type === "assignment" ||
+        currentNode.parent.type === "tuple"
       ) {
         await editor.edit(
           (editBuilder) => {

@@ -26,7 +26,7 @@ import {
   createRandomFile,
   DeferredPromise,
   deleteFile,
-} from "../utils";
+} from "./utils";
 import { TypeAssistService } from "../typing_assist/TypeAssistService";
 import { CommentSeparator } from "../typing_assist/completer/CommentSeparator";
 
