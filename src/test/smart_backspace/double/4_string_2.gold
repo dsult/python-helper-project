@@ -1,0 +1,3 @@
+s = f"123" + f"big string which hard to delete"<caret>
+-------------------
+s = f"123"<caret>

@@ -55,71 +55,104 @@ export async function activate(context: vscode.ExtensionContext) {
       const editor = assistService.editor;
 
       if (!editor) {
-        vscode.commands.executeCommand("deleteWordLeft");
+        // await vscode.commands.executeCommand("deleteWordLeft");
         return;
       }
 
       const position = editor.selection.active;
-      //   проверка на то что нужно удалять пробелы с ентрами
-      if (position.character === 0) {
-        vscode.commands.executeCommand("deleteWordLeft");
-        return;
-      }
-      let leftPosition = position.translate(0, -1);
+      const leftPosition = findPreviousPosition(editor, position);
+
       const leftCharacter = editor.document.getText(
         new vscode.Range(leftPosition, position)
       );
 
-      const currentNode = assistService.tree.rootNode.descendantForPosition(
-        {
-          row: position.line,
-          column: position.character - 1,
-        },
-        {
-          row: position.line,
-          column: position.character,
-        }
-      );
-
-      if (!(currentNode.previousNamedSibling && currentNode.parent)) {
-        vscode.commands.executeCommand("deleteWordLeft");
-        return;
-      }
-      if (leftCharacter === " ") {
-      }
-      //   console.log(currentNode.type);
-      //   console.log(currentNode.parent.type);
-
-      if (
-        currentNode.parent.type === "binary_operator" ||
-        currentNode.parent.type === "argument_list" ||
-        currentNode.parent.type === "parameters" ||
-        // currentNode.parent.type === "assignment" ||
-        currentNode.parent.type === "tuple"
-      ) {
-        await editor.edit(
-          (editBuilder) => {
-            if (currentNode.previousNamedSibling) {
-              editBuilder.replace(
-                new vscode.Range(
-                  new vscode.Position(
-                    currentNode.previousNamedSibling.endPosition.row,
-                    currentNode.previousNamedSibling.endPosition.column
-                  ),
-                  editor.selection.active
-                ),
-                ""
-              );
-            }
+      const currentNode =
+        assistService.tree.rootNode.namedDescendantForPosition(
+          {
+            row: position.line,
+            column: position.character - 1,
           },
-          { undoStopAfter: false, undoStopBefore: false }
+          {
+            row: position.line,
+            column: position.character,
+          }
         );
 
-        return;
-      } else {
-        vscode.commands.executeCommand("deleteWordLeft");
+      if (currentNode.hasError()) {
+        await vscode.commands.executeCommand("deleteWordLeft");
         return;
       }
+      let leftDeletePosition: vscode.Position;
+      let rightDeletePosition = position;
+
+      switch (true) {
+        case leftCharacter === " " ||
+          leftCharacter === "\t" ||
+          leftCharacter === "\n" || // (для линукса???)
+          leftCharacter === "\r\n":
+          leftDeletePosition = findFirstNonWhitespaceCharPositionToLeft(
+            editor,
+            position
+          );
+
+          if (currentNode.namedChildCount === 0) {
+            rightDeletePosition = findFirstNonWhitespaceCharPositionToRight(
+              editor,
+              position
+            );
+          }
+
+          break;
+
+        case currentNode.parent?.type === "decorator":
+          leftDeletePosition = new vscode.Position(
+            currentNode.parent.startPosition.row,
+            currentNode.parent.startPosition.column
+          );
+          break;
+
+        case currentNode.parent &&
+          currentNode.previousNamedSibling &&
+          (currentNode.parent.type === "binary_operator" ||
+            currentNode.parent.type === "argument_list" ||
+            currentNode.parent.type === "parameters" ||
+            // currentNode.parent.type === "assignment" ||
+            currentNode.parent.type === "tuple"):
+          leftDeletePosition = new vscode.Position(
+            currentNode.previousNamedSibling.endPosition.row,
+            currentNode.previousNamedSibling.endPosition.column
+          );
+          break;
+
+        case currentNode.type === "argument_list" &&
+          currentNode.previousNamedSibling?.type === "identifier":
+          leftDeletePosition = new vscode.Position(
+            currentNode.previousNamedSibling.startPosition.row,
+            currentNode.previousNamedSibling.startPosition.column
+          );
+          break;
+
+        default:
+          //   console.log(123);
+          //   console.log(currentNode);
+
+          leftDeletePosition = new vscode.Position(
+            currentNode.startPosition.row,
+            currentNode.startPosition.column
+          );
+          break;
+      }
+      await editor.edit(
+        (editBuilder) => {
+          editBuilder.replace(
+            new vscode.Range(leftDeletePosition, rightDeletePosition),
+            ""
+          );
+        },
+        { undoStopAfter: false, undoStopBefore: false }
+      );
+
+      return;
     }
   );
   context.subscriptions.push(disposable);
@@ -143,6 +176,78 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 }
 
+function findPreviousPosition(
+  editor: vscode.TextEditor,
+  position: vscode.Position
+): vscode.Position {
+  const offset = editor.document.offsetAt(position);
+  if (offset > 0) {
+    return editor.document.positionAt(offset - 1);
+  } else {
+    return position;
+  }
+}
+
+function findFirstNonWhitespaceCharPositionToLeft(
+  editor: vscode.TextEditor,
+  position: vscode.Position
+) {
+  let lineNum = position.line;
+  let charPos = position.character;
+
+  while (lineNum >= 0) {
+    let lineText = editor.document.lineAt(lineNum).text;
+
+    // Перемещаемся влево по текущей строке
+    while (charPos > 0) {
+      charPos--;
+      if (!/\s/.test(lineText[charPos])) {
+        // Нашли непробельный символ
+        return new vscode.Position(lineNum, charPos + 1);
+      }
+    }
+
+    // Если мы достигли начала строки, переходим к предыдущей
+    if (lineNum > 0) {
+      lineNum--;
+      charPos = editor.document.lineAt(lineNum).text.length;
+    } else {
+      // Мы в начале документа и не нашли непробельных символов
+      return new vscode.Position(0, 0);
+    }
+  }
+
+  return position; // Непробельных символов не найдено во всем документе
+}
+function findFirstNonWhitespaceCharPositionToRight(
+  editor: vscode.TextEditor,
+  position: vscode.Position
+) {
+  let lineNum = position.line;
+  let charPos = position.character;
+  let doc = editor.document;
+  let totalLines = doc.lineCount;
+
+  while (lineNum < totalLines) {
+    let lineText = doc.lineAt(lineNum).text;
+    let lineLength = lineText.length;
+
+    // Перемещаемся вправо по текущей строке
+    while (charPos < lineLength) {
+      if (!/\s/.test(lineText[charPos])) {
+        // Нашли непробельный символ
+        return new vscode.Position(lineNum, charPos);
+      }
+      charPos++;
+    }
+
+    // Если мы достигли конца строки, переходим к следующей
+    lineNum++;
+    charPos = 0;
+  }
+
+  return position; // Непробельных символов не найдено во всем документе
+}
 async function fillTreeSitterMissingNodes(assistService: TypeAssistService) {
   const missingNodes: SyntaxNode[] = [];
 

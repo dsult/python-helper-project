@@ -5,4 +5,4 @@ print(s,
       
 <caret> 123)
 -------------------
-print(s, 123)
+print(s,<caret> 123)

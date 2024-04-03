@@ -1,0 +1,9 @@
+@dec
+def f(a, v):
+	print(1 + ((((r"some test")))))
+	print<caret>)
+-------------------
+@dec
+def f(a, v):
+	print(1 + ((((r"some test")))))
+	<caret>)

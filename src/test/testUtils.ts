@@ -218,7 +218,7 @@ export function makeAssistSuite(
 export function makeCommandSuite(
   suiteName: string,
   testNames: any[],
-  targetDir = __dirname + "/ctrl_backspace"
+  targetDir: string
 ) {
   suite(suiteName, () => {
     let assistService: TypeAssistService;

@@ -19,7 +19,7 @@ import {
 
 // ctrl + backspace
 
-const targetDir = __dirname + "/ctrl_backspace";
+const targetDir = __dirname + "/smart_backspace";
 const FoldersAndFiles = getFoldersAndFiles(targetDir);
 
 for (const suiteName in FoldersAndFiles) {

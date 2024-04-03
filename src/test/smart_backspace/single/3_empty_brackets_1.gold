@@ -1,0 +1,3 @@
+	print(<caret>)
+-------------------
+	print<caret>
