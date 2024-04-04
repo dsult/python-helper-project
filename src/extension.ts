@@ -8,6 +8,7 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
+import { convertToPosition } from "./TreeUtils";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -105,10 +106,10 @@ export async function activate(context: vscode.ExtensionContext) {
           break;
 
         case currentNode.parent?.type === "decorator":
-          leftDeletePosition = new vscode.Position(
-            currentNode.parent.startPosition.row,
-            currentNode.parent.startPosition.column
+          leftDeletePosition = convertToPosition(
+            currentNode.parent.startPosition
           );
+          rightDeletePosition = convertToPosition(currentNode.endPosition);
           break;
 
         case currentNode.parent &&
@@ -118,28 +119,26 @@ export async function activate(context: vscode.ExtensionContext) {
             currentNode.parent.type === "parameters" ||
             // currentNode.parent.type === "assignment" ||
             currentNode.parent.type === "tuple"):
-          leftDeletePosition = new vscode.Position(
-            currentNode.previousNamedSibling.endPosition.row,
-            currentNode.previousNamedSibling.endPosition.column
+          leftDeletePosition = convertToPosition(
+            currentNode.previousNamedSibling.endPosition
           );
+          rightDeletePosition = convertToPosition(currentNode.endPosition);
           break;
 
         case currentNode.type === "argument_list" &&
           currentNode.previousNamedSibling?.type === "identifier":
-          leftDeletePosition = new vscode.Position(
-            currentNode.previousNamedSibling.startPosition.row,
-            currentNode.previousNamedSibling.startPosition.column
+          leftDeletePosition = convertToPosition(
+            currentNode.previousNamedSibling.startPosition
           );
+          rightDeletePosition = convertToPosition(currentNode.endPosition);
+
           break;
 
         default:
           //   console.log(123);
           //   console.log(currentNode);
-
-          leftDeletePosition = new vscode.Position(
-            currentNode.startPosition.row,
-            currentNode.startPosition.column
-          );
+          leftDeletePosition = convertToPosition(currentNode.startPosition);
+          rightDeletePosition = convertToPosition(currentNode.endPosition);
           break;
       }
       await editor.edit(
