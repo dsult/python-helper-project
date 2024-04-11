@@ -1,5 +1,6 @@
 import { Point, SyntaxNode } from "web-tree-sitter";
 import * as vscode from "vscode";
+import { TypeAssistService } from "./typing_assist/TypeAssistService";
 
 /**
  * Проверяет наличие ноды с определенным типом в родительских нодах относительно целевой ноды.
@@ -126,4 +127,42 @@ export function getActiveDocumentIndentationType(): string | undefined {
   } else {
     return "Tabs";
   }
+}
+
+export async function fillTreeSitterMissingNodes(
+  assistService: TypeAssistService
+) {
+  const missingNodes: SyntaxNode[] = [];
+
+  function traverseTree(node: SyntaxNode): void {
+    node.children.forEach((n: SyntaxNode) => {
+      if (n.isMissing()) {
+        missingNodes.push(n);
+      }
+      traverseTree(n);
+    });
+  }
+
+  traverseTree(assistService.tree.rootNode);
+
+  const editor = vscode.window.activeTextEditor;
+  const document = vscode.workspace.textDocuments[0];
+
+  console.log(missingNodes);
+
+  const edits: { position: vscode.Position; newText: string }[] = [];
+
+  missingNodes.forEach((missingNode: SyntaxNode) => {
+    const position = document.positionAt(missingNode.startIndex);
+    edits.push({ position, newText: missingNode.type });
+  });
+
+  await editor?.edit(
+    (editBuilder) => {
+      edits.forEach(({ position, newText }) => {
+        editBuilder.replace(position, newText);
+      });
+    },
+    { undoStopAfter: false, undoStopBefore: false }
+  );
 }

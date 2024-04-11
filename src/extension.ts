@@ -5,10 +5,27 @@ import { DocstringCompleter } from "./typing_assist/completer/DocstringCompleter
 import { FunctionCompleter } from "./typing_assist/completer/FunctionCompleter";
 import { BracketingExpressionCompleter } from "./typing_assist/completer/BracketingExpressionCompleter";
 import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
-import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 import { convertToPosition } from "./TreeUtils";
+
+import { ParseOptions, Parser } from "./lib/pyright-parser/parser/parser";
+import { DiagnosticSink } from "./lib/pyright-parser/common/diagnosticSink";
+import * as parseTreeUtils from "./lib/pyright-parser/analyzer/parseTreeUtils";
+
+import * as util from "util";
+import { smartDeleteTreeSitter } from "./smart_delete/smartDeleteTreeSitter";
+import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
+import { getPreviousSibling } from "./utilsPR";
+import { getCodeFlowExpressions } from "./lib/pyright-parser/analyzer/analyzerNodeInfo";
+import {
+  ErrorNode,
+  FormatStringNode,
+  ParseNode,
+  StringNode,
+  isExpressionNode,
+} from "./lib/pyright-parser/parser/parseNodes";
+import { ParseTreeWalker } from "./lib/pyright-parser/analyzer/parseTreeWalker";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -40,119 +57,94 @@ export async function activate(context: vscode.ExtensionContext) {
     async () => {
       const editor = assistService.editor!;
       const position = editor.selection.active;
-      const currentNode = assistService.tree.rootNode.descendantForPosition({
+      const offset = editor.document.offsetAt(editor.selection.active);
+      const currentNodeTS = assistService.tree.rootNode.descendantForPosition({
         row: position.line,
         column: position.character,
       });
-      console.log(currentNode);
+      console.log(currentNodeTS);
       console.log(assistService.tree.rootNode);
+
+      //   console.log("test1");
+
+      let parseOptions = new ParseOptions();
+      parseOptions.reportErrorsForParsedStringContents = true;
+      const parser = new Parser();
+      const diagSink = new DiagnosticSink();
+      let text;
+
+      text = editor.document.getText();
+
+      let some = parser.parseSourceFile(text, parseOptions, diagSink);
+
+      console.log(some);
+
+      const node = parseTreeUtils.findNodeByPosition(
+        some.parserOutput.parseTree,
+        editor.selection.active,
+        some.tokenizerOutput.lines
+      );
+
+      if (!node) {
+        return;
+      }
+
+      class StringNodeWalker extends ParseTreeWalker {
+        constructor(
+          private _callback: (node: StringNode | FormatStringNode) => void
+        ) {
+          super();
+        }
+
+        override visit(node: ParseNode) {
+          console.log(
+            "Node: ",
+            parseTreeUtils.printParseNodeType(node.nodeType)
+          );
+          return true;
+        }
+
+        override visitString(node: StringNode) {
+          this._callback(node);
+          //   console.log(node, node.value);
+          return true;
+        }
+        override visitFormatString(node: FormatStringNode) {
+          this._callback(node);
+          //   console.log(node, node.value);
+          return true;
+        }
+      }
+      console.log("--------------------WALKER--------------------");
+
+      let txtw = new StringNodeWalker((node) => console.log(node, node.value));
+      //   txtw.walk(node);
+      txtw.walk(some.parserOutput.parseTree);
+
+      console.log("--------------------PARENTS--------------------");
+      //   console.log(node);
+      console.log(diagSink);
+
+      let currentNode = node;
+      console.log(parseTreeUtils.printParseNodeType(currentNode.nodeType));
+      console.log(currentNode.parent);
+      while (currentNode.parent) {
+        console.log(
+          parseTreeUtils.printParseNodeType(currentNode.parent.nodeType)
+        );
+        console.log(currentNode.parent);
+
+        currentNode = currentNode.parent;
+      }
+      console.log("----------------------------------------");
     }
   );
   context.subscriptions.push(disposable);
 
   disposable = vscode.commands.registerCommand(
     "python-helper-project.newDelete",
-    async () => {
-      const editor = assistService.editor;
-
-      if (!editor) {
-        // await vscode.commands.executeCommand("deleteWordLeft");
-        return;
-      }
-
-      const position = editor.selection.active;
-      const leftPosition = findPreviousPosition(editor, position);
-
-      const leftCharacter = editor.document.getText(
-        new vscode.Range(leftPosition, position)
-      );
-
-      const currentNode =
-        assistService.tree.rootNode.namedDescendantForPosition(
-          {
-            row: position.line,
-            column: position.character - 1,
-          },
-          {
-            row: position.line,
-            column: position.character,
-          }
-        );
-
-      if (currentNode.hasError()) {
-        await vscode.commands.executeCommand("deleteWordLeft");
-        return;
-      }
-      let leftDeletePosition: vscode.Position;
-      let rightDeletePosition = position;
-
-      switch (true) {
-        case leftCharacter === " " ||
-          leftCharacter === "\t" ||
-          leftCharacter === "\n" || // (для линукса???)
-          leftCharacter === "\r\n":
-          leftDeletePosition = findFirstNonWhitespaceCharPositionToLeft(
-            editor,
-            position
-          );
-
-          if (currentNode.namedChildCount === 0) {
-            rightDeletePosition = findFirstNonWhitespaceCharPositionToRight(
-              editor,
-              position
-            );
-          }
-
-          break;
-
-        case currentNode.parent?.type === "decorator":
-          leftDeletePosition = convertToPosition(
-            currentNode.parent.startPosition
-          );
-          rightDeletePosition = convertToPosition(currentNode.endPosition);
-          break;
-
-        case currentNode.parent &&
-          currentNode.previousNamedSibling &&
-          (currentNode.parent.type === "binary_operator" ||
-            currentNode.parent.type === "argument_list" ||
-            currentNode.parent.type === "parameters" ||
-            // currentNode.parent.type === "assignment" ||
-            currentNode.parent.type === "tuple"):
-          leftDeletePosition = convertToPosition(
-            currentNode.previousNamedSibling.endPosition
-          );
-          rightDeletePosition = convertToPosition(currentNode.endPosition);
-          break;
-
-        case currentNode.type === "argument_list" &&
-          currentNode.previousNamedSibling?.type === "identifier":
-          leftDeletePosition = convertToPosition(
-            currentNode.previousNamedSibling.startPosition
-          );
-          rightDeletePosition = convertToPosition(currentNode.endPosition);
-
-          break;
-
-        default:
-          //   console.log(123);
-          //   console.log(currentNode);
-          leftDeletePosition = convertToPosition(currentNode.startPosition);
-          rightDeletePosition = convertToPosition(currentNode.endPosition);
-          break;
-      }
-      await editor.edit(
-        (editBuilder) => {
-          editBuilder.replace(
-            new vscode.Range(leftDeletePosition, rightDeletePosition),
-            ""
-          );
-        },
-        { undoStopAfter: false, undoStopBefore: false }
-      );
-
-      return;
-    }
+    // smartDeleteTreeSitter(assistService)
+    smartDeletePyright()
   );
   context.subscriptions.push(disposable);
 
@@ -173,114 +165,6 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
   });
-}
-
-function findPreviousPosition(
-  editor: vscode.TextEditor,
-  position: vscode.Position
-): vscode.Position {
-  const offset = editor.document.offsetAt(position);
-  if (offset > 0) {
-    return editor.document.positionAt(offset - 1);
-  } else {
-    return position;
-  }
-}
-
-function findFirstNonWhitespaceCharPositionToLeft(
-  editor: vscode.TextEditor,
-  position: vscode.Position
-) {
-  let lineNum = position.line;
-  let charPos = position.character;
-
-  while (lineNum >= 0) {
-    let lineText = editor.document.lineAt(lineNum).text;
-
-    // Перемещаемся влево по текущей строке
-    while (charPos > 0) {
-      charPos--;
-      if (!/\s/.test(lineText[charPos])) {
-        // Нашли непробельный символ
-        return new vscode.Position(lineNum, charPos + 1);
-      }
-    }
-
-    // Если мы достигли начала строки, переходим к предыдущей
-    if (lineNum > 0) {
-      lineNum--;
-      charPos = editor.document.lineAt(lineNum).text.length;
-    } else {
-      // Мы в начале документа и не нашли непробельных символов
-      return new vscode.Position(0, 0);
-    }
-  }
-
-  return position; // Непробельных символов не найдено во всем документе
-}
-function findFirstNonWhitespaceCharPositionToRight(
-  editor: vscode.TextEditor,
-  position: vscode.Position
-) {
-  let lineNum = position.line;
-  let charPos = position.character;
-  let doc = editor.document;
-  let totalLines = doc.lineCount;
-
-  while (lineNum < totalLines) {
-    let lineText = doc.lineAt(lineNum).text;
-    let lineLength = lineText.length;
-
-    // Перемещаемся вправо по текущей строке
-    while (charPos < lineLength) {
-      if (!/\s/.test(lineText[charPos])) {
-        // Нашли непробельный символ
-        return new vscode.Position(lineNum, charPos);
-      }
-      charPos++;
-    }
-
-    // Если мы достигли конца строки, переходим к следующей
-    lineNum++;
-    charPos = 0;
-  }
-
-  return position; // Непробельных символов не найдено во всем документе
-}
-async function fillTreeSitterMissingNodes(assistService: TypeAssistService) {
-  const missingNodes: SyntaxNode[] = [];
-
-  function traverseTree(node: SyntaxNode): void {
-    node.children.forEach((n: SyntaxNode) => {
-      if (n.isMissing()) {
-        missingNodes.push(n);
-      }
-      traverseTree(n);
-    });
-  }
-
-  traverseTree(assistService.tree.rootNode);
-
-  const editor = vscode.window.activeTextEditor;
-  const document = vscode.workspace.textDocuments[0];
-
-  console.log(missingNodes);
-
-  const edits: { position: vscode.Position; newText: string }[] = [];
-
-  missingNodes.forEach((missingNode: SyntaxNode) => {
-    const position = document.positionAt(missingNode.startIndex);
-    edits.push({ position, newText: missingNode.type });
-  });
-
-  await editor?.edit(
-    (editBuilder) => {
-      edits.forEach(({ position, newText }) => {
-        editBuilder.replace(position, newText);
-      });
-    },
-    { undoStopAfter: false, undoStopBefore: false }
-  );
 }
 
 function setContextByConfiguration(context: string, configuration: string) {

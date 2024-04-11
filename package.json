@@ -96,6 +96,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "vscode-jsonrpc": "^8.2.0",
     "web-tree-sitter": "^0.20.8"
   }
 }
