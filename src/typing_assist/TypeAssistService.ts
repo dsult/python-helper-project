@@ -4,6 +4,7 @@ import Parser from "web-tree-sitter"; // Import the module with a default import
 import { resolve } from "path";
 
 export class TypeAssistService {
+  public unchangedText: string = "";
   constructor(
     public assistList: ITypingAssist[],
     public tree: Parser.Tree,
@@ -11,7 +12,7 @@ export class TypeAssistService {
     public editor: vscode.TextEditor | undefined
   ) {}
 
-  static async init(assistList: ITypingAssist[]) {
+  static async init(assistList: ITypingAssist[]): Promise<TypeAssistService> {
     await Parser.init(); // Call init on the imported module
 
     const path = require("path");
@@ -41,8 +42,9 @@ export class TypeAssistService {
     if (this.editor) {
       const doc = this.editor.document;
       if (doc.languageId === "python") {
-        const sourceCode = doc.getText();
-        this.tree = this.parser.parse(sourceCode);
+        const content = doc.getText();
+        this.tree = this.parser.parse(content);
+        this.unchangedText = content;
       }
     }
   }
@@ -91,6 +93,7 @@ export class TypeAssistService {
     });
 
     this.tree = this.parser.parse(content, this.tree!);
+    this.unchangedText = content;
   }
 
   /**
@@ -102,13 +105,17 @@ export class TypeAssistService {
       // не тригириться на ctrl+z, ctrl+shift+z
       changeEvent.reason !== 1 &&
       changeEvent.reason !== 2 &&
-      this.editor.document.languageId === "python"
+      this.editor.document.languageId === "python" &&
+      changeEvent.contentChanges.length > 0 &&
+      (/^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) ||
+        changeEvent.contentChanges[0].text === "()")
     ) {
       const context: Context = {
         tree: this.tree,
         editor: this.editor,
         changeEvent: changeEvent,
         parser: this.parser,
+        unchangedText: this.unchangedText,
       };
 
       for (const assist of this.assistList) {

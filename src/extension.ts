@@ -3,29 +3,22 @@ import { StringSeparator } from "./typing_assist/completer/StringSeparator";
 import { TypeAssistService } from "./typing_assist/TypeAssistService";
 import { DocstringCompleter } from "./typing_assist/completer/DocstringCompleter";
 import { FunctionCompleter } from "./typing_assist/completer/FunctionCompleter";
-import { BracketingExpressionCompleter } from "./typing_assist/completer/BracketingExpressionCompleter";
 import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
-import { convertToPosition } from "./TreeUtils";
 
 import { ParseOptions, Parser } from "./lib/pyright-parser/parser/parser";
 import { DiagnosticSink } from "./lib/pyright-parser/common/diagnosticSink";
 import * as parseTreeUtils from "./lib/pyright-parser/analyzer/parseTreeUtils";
 
-import * as util from "util";
-import { smartDeleteTreeSitter } from "./smart_delete/smartDeleteTreeSitter";
 import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
-import { getPreviousSibling } from "./utilsPR";
-import { getCodeFlowExpressions } from "./lib/pyright-parser/analyzer/analyzerNodeInfo";
 import {
-  ErrorNode,
   FormatStringNode,
   ParseNode,
   StringNode,
-  isExpressionNode,
 } from "./lib/pyright-parser/parser/parseNodes";
 import { ParseTreeWalker } from "./lib/pyright-parser/analyzer/parseTreeWalker";
+import { BracketingExpressionCompleterPyright } from "./typing_assist/completer/BracketingExpressionCompleterPyright";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -34,7 +27,8 @@ export async function activate(context: vscode.ExtensionContext) {
     new StringSeparator(),
     new DocstringCompleter(),
     new FunctionCompleter(),
-    new BracketingExpressionCompleter(),
+    // new BracketingExpressionCompleter(),
+    new BracketingExpressionCompleterPyright(),
     new NewlineSpaceRemover(),
     new CommentSeparator(),
     new ReturnDedent(),
@@ -44,7 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
     // console.log(e);
-    // e -> TypingAssistData
+    // console.log(e.document.getText());
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -62,11 +56,10 @@ export async function activate(context: vscode.ExtensionContext) {
         row: position.line,
         column: position.character,
       });
-      console.log(currentNodeTS);
-      console.log(assistService.tree.rootNode);
+      //   console.log(currentNodeTS);
+      //   console.log(assistService.tree.rootNode);
 
       //   console.log("test1");
-
       let parseOptions = new ParseOptions();
       parseOptions.reportErrorsForParsedStringContents = true;
       const parser = new Parser();
@@ -77,55 +70,69 @@ export async function activate(context: vscode.ExtensionContext) {
 
       let some = parser.parseSourceFile(text, parseOptions, diagSink);
 
-      console.log(some);
+      //   console.log(util.inspect(some.parserOutput.parseTree, { depth: null }));
+      //   console.log(some);
 
-      const node = parseTreeUtils.findNodeByPosition(
+      const nodePR = parseTreeUtils.findNodeByPosition(
         some.parserOutput.parseTree,
         editor.selection.active,
         some.tokenizerOutput.lines
       );
 
-      if (!node) {
+      const token = parseTreeUtils.findTokenAfter(
+        some.tokenizerOutput,
+        offset,
+        () => true
+      );
+
+      if (!nodePR) {
         return;
       }
 
-      class StringNodeWalker extends ParseTreeWalker {
-        constructor(
-          private _callback: (node: StringNode | FormatStringNode) => void
-        ) {
-          super();
-        }
+      //   console.log("--------------------TOKEN--------------------");
 
-        override visit(node: ParseNode) {
-          console.log(
-            "Node: ",
-            parseTreeUtils.printParseNodeType(node.nodeType)
-          );
-          return true;
-        }
+      //   console.log(token);
+      //   //   console.log(TokenType);
 
-        override visitString(node: StringNode) {
-          this._callback(node);
-          //   console.log(node, node.value);
-          return true;
-        }
-        override visitFormatString(node: FormatStringNode) {
-          this._callback(node);
-          //   console.log(node, node.value);
-          return true;
-        }
-      }
-      console.log("--------------------WALKER--------------------");
+      //   class StringNodeWalker extends ParseTreeWalker {
+      //     constructor(
+      //       private _callback: (node: StringNode | FormatStringNode) => void
+      //     ) {
+      //       super();
+      //     }
 
-      let txtw = new StringNodeWalker((node) => console.log(node, node.value));
-      //   txtw.walk(node);
-      txtw.walk(some.parserOutput.parseTree);
+      //     override visit(node: ParseNode) {
+      //       console.log(
+      //         "Node: ",
+      //         parseTreeUtils.printParseNodeType(node.nodeType)
+      //       );
+      //       return true;
+      //     }
+
+      //     override visitString(node: StringNode) {
+      //       this._callback(node);
+      //       //   console.log(node, node.value);
+      //       return true;
+      //     }
+      //     override visitFormatString(node: FormatStringNode) {
+      //       this._callback(node);
+      //       //   console.log(node, node.value);
+      //       return true;
+      //     }
+      //   }
+      //   console.log("--------------------WALKER--------------------");
+
+      //   let txtw = new StringNodeWalker((nodePR) =>
+      //     console.log(nodePR, nodePR.value)
+      //   );
+      //   txtw.walk(nodePR);
+      //   //   txtw.walk(some.parserOutput.parseTree);
 
       console.log("--------------------PARENTS--------------------");
-      //   console.log(node);
+      //   console.log(nodePR);
       console.log(diagSink);
 
-      let currentNode = node;
+      let currentNode = nodePR;
       console.log(parseTreeUtils.printParseNodeType(currentNode.nodeType));
       console.log(currentNode.parent);
       while (currentNode.parent) {
@@ -136,7 +143,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         currentNode = currentNode.parent;
       }
-      console.log("----------------------------------------");
+      console.log("--------------------END--------------------");
     }
   );
   context.subscriptions.push(disposable);

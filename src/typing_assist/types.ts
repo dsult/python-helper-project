@@ -23,6 +23,7 @@ export interface Context {
   parser: Parser;
   editor: vscode.TextEditor;
   changeEvent: vscode.TextDocumentChangeEvent;
+  unchangedText: string;
 }
 
 export interface ExtendedSyntaxNode extends SyntaxNode {

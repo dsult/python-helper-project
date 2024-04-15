@@ -162,7 +162,7 @@ export class StringSeparator implements ITypingAssist {
       columnOffset =
         stringtNode.startPosition.column -
         changeEvent.contentChanges[0].text.length +
-        3;
+        2;
 
       if (columnOffset < 0) {
         columnOffset = 0;
