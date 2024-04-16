@@ -1,0 +1,4 @@
+                return (some +<\n>       some_else)
+-------------------
+                return (some +
+                <caret>some_else)

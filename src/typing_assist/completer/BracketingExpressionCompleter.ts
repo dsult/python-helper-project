@@ -3,6 +3,7 @@ import { Context, ITypingAssist } from "../types";
 import { SyntaxNode } from "web-tree-sitter";
 import {
   deleteSpacesAfterCoursor,
+  getActiveDocumentIndentationType,
   getParentWithType,
   hasParentWithType,
   isPositionInsideNode,
@@ -27,7 +28,7 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       !(
         changeEvent.contentChanges.length === 1 &&
         /^\r\n(\s)*$/.test(changeEvent.contentChanges[0].text) &&
-        changeEvent.contentChanges[0].rangeLength == 0 &&
+        changeEvent.contentChanges[0].rangeLength === 0 &&
         editor.selection.active.isEqual(
           changeEvent.contentChanges[0].range.start
         )
@@ -86,7 +87,16 @@ export class BracketingExpressionCompleter implements ITypingAssist {
 
     return !!(
       isPositionInsideNode(position, this.targetNode) &&
-      !hasParentWithType(currentNode, "parenthesized_expression") &&
+      //   Очень надеюсь, что никому не придется разбираться в этом условии,
+      //   но если что, оно решает проблему из BracketingExpressionCompleter/2_bracket_bug.gold
+      !(
+        hasParentWithType(currentNode, "parenthesized_expression") &&
+        !(
+          currentNode.parent &&
+          currentNode.type === "(" &&
+          !hasParentWithType(currentNode.parent, "parenthesized_expression")
+        )
+      ) &&
       !hasParentWithType(currentNode, "argument_list") &&
       //   !hasParentWithType(currentNode, "call") &&
       !hasParentWithType(currentNode, "list") &&
@@ -132,9 +142,23 @@ export class BracketingExpressionCompleter implements ITypingAssist {
       changeEvent.contentChanges[0].text.length +
       3;
 
+    if (columnOffset < 0) {
+      columnOffset = 0;
+    }
+
+    let replaceText: string;
+
+    const indentationType = getActiveDocumentIndentationType();
+    if (indentationType === "Tabs") {
+      replaceText =
+        "\t".repeat(columnOffset / 4) + " ".repeat(columnOffset % 4);
+    } else {
+      replaceText = " ".repeat(columnOffset);
+    }
+
     await editor.edit(
       (editBuilder) => {
-        editBuilder.replace(editor.selection.active, " ".repeat(columnOffset));
+        editBuilder.replace(editor.selection.active, replaceText);
       },
       { undoStopAfter: false, undoStopBefore: false }
     );

@@ -1,0 +1,8 @@
+class A:
+    @some.setter
+    def some<()>
+-------------------
+class A:
+    @some.setter
+    def some(self, value):
+        pass<caret>

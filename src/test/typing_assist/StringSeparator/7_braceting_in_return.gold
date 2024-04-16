@@ -1,0 +1,4 @@
+return 'some<\n> test'
+-------------------
+return ('some'
+        '<caret> test')

@@ -78,7 +78,7 @@ export class FunctionCompleter implements ITypingAssist {
     );
   }
 
-  apply(context: Context): void {
+  async apply(context: Context): Promise<void> {
     const editor = context.editor;
 
     let position: vscode.Position = editor.selection.active;
@@ -110,11 +110,15 @@ export class FunctionCompleter implements ITypingAssist {
         break;
     }
 
-    editor.insertSnippet(
+    await editor.insertSnippet(
       new vscode.SnippetString(snippet),
       new vscode.Range(position, position.translate(0, 2))
       // { undoStopBefore: false, undoStopAfter: false, }
     );
+    // console.log("FunctionCompleter");
+    // console.log(`
+    // ${i}
+    // `);
   }
 
   private checkFunctionKind(currentNode: Parser.SyntaxNode): FunctionKind {

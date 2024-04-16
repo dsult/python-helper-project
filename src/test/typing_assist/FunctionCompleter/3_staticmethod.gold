@@ -1,0 +1,8 @@
+class A:
+    @staticmethod
+    def f<()>
+-------------------
+class A:
+    @staticmethod
+    def f(<caret>):
+        pass

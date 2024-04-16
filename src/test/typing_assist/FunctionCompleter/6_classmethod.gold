@@ -1,0 +1,8 @@
+class A:
+    @classmethod
+    def f<()>
+-------------------
+class A:
+    @classmethod
+    def f(cls<caret>):
+        pass

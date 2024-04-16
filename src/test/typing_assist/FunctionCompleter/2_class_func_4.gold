@@ -1,0 +1,14 @@
+class A:
+    def f1(self):
+        pass
+    def f2<()>
+    def f3(self):
+        pass
+-------------------
+class A:
+    def f1(self):
+        pass
+    def f2(self<caret>):
+        pass
+    def f3(self):
+        pass

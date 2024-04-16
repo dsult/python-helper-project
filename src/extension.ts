@@ -3,11 +3,23 @@ import { StringSeparator } from "./typing_assist/completer/StringSeparator";
 import { TypeAssistService } from "./typing_assist/TypeAssistService";
 import { DocstringCompleter } from "./typing_assist/completer/DocstringCompleter";
 import { FunctionCompleter } from "./typing_assist/completer/FunctionCompleter";
-import { BracketingExpressionCompleter } from "./typing_assist/completer/BracketingExpressionCompleter";
 import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemover";
-import { SyntaxNode } from "web-tree-sitter";
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
+
+import { ParseOptions, Parser } from "./lib/pyright-parser/parser/parser";
+import { DiagnosticSink } from "./lib/pyright-parser/common/diagnosticSink";
+import * as parseTreeUtils from "./lib/pyright-parser/analyzer/parseTreeUtils";
+
+import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
+import {
+  FormatStringNode,
+  ParseNode,
+  StringNode,
+  isExpressionNode,
+} from "./lib/pyright-parser/parser/parseNodes";
+import { ParseTreeWalker } from "./lib/pyright-parser/analyzer/parseTreeWalker";
+import { BracketingExpressionCompleterPyright } from "./typing_assist/completer/BracketingExpressionCompleterPyright";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -16,7 +28,8 @@ export async function activate(context: vscode.ExtensionContext) {
     new StringSeparator(),
     new DocstringCompleter(),
     new FunctionCompleter(),
-    new BracketingExpressionCompleter(),
+    // new BracketingExpressionCompleter(),
+    new BracketingExpressionCompleterPyright(),
     new NewlineSpaceRemover(),
     new CommentSeparator(),
     new ReturnDedent(),
@@ -26,6 +39,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
     // console.log(e);
+    // console.log(e.document.getText());
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -36,33 +50,29 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      class SampleInlayHintsProvider {
-        provideInlayHints(
-          document: any,
-          range: { start: { line: number; character: number } },
-          token: any
-        ) {
-          const position = new vscode.Position(
-            range.start.line,
-            range.start.character
-          );
-          const hint = new vscode.InlayHint(
-            position,
-            "some hint",
-            vscode.InlayHintKind.Type
-          );
-          return [hint];
-        }
-      }
-      // await fillTreeSitterMissingNodes(assistService);
-
-      const provider = new SampleInlayHintsProvider();
-      const selector = { scheme: "file", language: "python" };
-
-      context.subscriptions.push(
-        vscode.languages.registerInlayHintsProvider(selector, provider)
-      );
+      //   let editor = vscode.window.activeTextEditor;
+      //   // Определяем правило подсветки для всех строк в синий цвет
+      //   let blueColorRule: vscode.DecorationOptions = {
+      //     range: new vscode.Range(0, 0, Number.MAX_VALUE, Number.MAX_VALUE), // Диапазон для всех строк
+      //     renderOptions: {
+      //       backgroundColor: "blue", // Синий цвет подсветки
+      //     },
+      //   };
+      //   // Применяем правило к текущему редактору
+      //   if (editor) {
+      //     let decoration =
+      //       vscode.window.createTextEditorDecorationType(blueColorRule);
+      //     editor.setDecorations(decoration, [blueColorRule.range]);
+      //   }
+      console.log(132);
     }
+  );
+  context.subscriptions.push(disposable);
+
+  disposable = vscode.commands.registerCommand(
+    "python-helper-project.newDelete",
+    // smartDeleteTreeSitter(assistService)
+    smartDeletePyright()
   );
   context.subscriptions.push(disposable);
 
@@ -83,42 +93,6 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
   });
-}
-
-async function fillTreeSitterMissingNodes(assistService: TypeAssistService) {
-  const missingNodes: SyntaxNode[] = [];
-
-  function traverseTree(node: SyntaxNode): void {
-    node.children.forEach((n: SyntaxNode) => {
-      if (n.isMissing()) {
-        missingNodes.push(n);
-      }
-      traverseTree(n);
-    });
-  }
-
-  traverseTree(assistService.tree.rootNode);
-
-  const editor = vscode.window.activeTextEditor;
-  const document = vscode.workspace.textDocuments[0];
-
-  console.log(missingNodes);
-
-  const edits: { position: vscode.Position; newText: string }[] = [];
-
-  missingNodes.forEach((missingNode: SyntaxNode) => {
-    const position = document.positionAt(missingNode.startIndex);
-    edits.push({ position, newText: missingNode.type });
-  });
-
-  await editor?.edit(
-    (editBuilder) => {
-      edits.forEach(({ position, newText }) => {
-        editBuilder.replace(position, newText);
-      });
-    },
-    { undoStopAfter: false, undoStopBefore: false }
-  );
 }
 
 function setContextByConfiguration(context: string, configuration: string) {

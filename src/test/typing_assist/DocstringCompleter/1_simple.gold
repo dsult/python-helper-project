@@ -1,0 +1,19 @@
+def f(a: int, b="some") -> int:
+    """<\n>"""
+-------------------
+def f(a: int, b="some") -> int:
+    """
+    
+    
+    Parameters
+    ----------
+    a: int
+        <caret>
+    b: Any = "some"
+        
+    
+    Returns
+    -------
+    int
+    
+    """

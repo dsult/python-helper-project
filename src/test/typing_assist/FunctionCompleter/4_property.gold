@@ -1,0 +1,8 @@
+class A:
+    @property
+    def some<()>
+-------------------
+class A:
+    @property
+    def some(self):
+        return <caret>

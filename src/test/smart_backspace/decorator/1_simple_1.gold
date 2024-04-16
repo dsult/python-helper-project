@@ -1,0 +1,7 @@
+@dec<caret>
+def f(a, v):
+    pass
+-------------------
+<caret>
+def f(a, v):
+    pass
