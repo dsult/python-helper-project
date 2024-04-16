@@ -3,11 +3,19 @@ import * as parseTreeUtils from "../../lib/pyright-parser/analyzer/parseTreeUtil
 
 import { Context, ITypingAssist } from "../types";
 import {
+  FormatStringNode,
   ParseNode,
   ParseNodeType,
+  StringNode,
+  isExpressionNode,
 } from "../../lib/pyright-parser/parser/parseNodes";
 import { DiagnosticSink } from "../../lib/pyright-parser/common/diagnosticSink";
 import { ParseOptions, Parser } from "../../lib/pyright-parser/parser/parser";
+import { ParseTreeWalker } from "../../lib/pyright-parser/analyzer/parseTreeWalker";
+import {
+  deleteSpacesAfterCoursor,
+  getActiveDocumentIndentationType,
+} from "../../TreeUtils";
 
 /**
  * оборачивает выражение в скобки при нажатии ентра если это нужно
@@ -22,8 +30,10 @@ export class BracketingExpressionCompleterPyright implements ITypingAssist {
 
   isApplicable(context: Context): Boolean {
     const editor = context.editor;
-    const changeEvent: vscode.TextDocumentChangeEvent = context.changeEvent;
+    // const changeEvent: vscode.TextDocumentChangeEvent = context.changeEvent;
     const unchangedText = context.unchangedText;
+
+    const offset = editor.document.offsetAt(editor.selection.active);
 
     let parseOptions = new ParseOptions();
     parseOptions.reportErrorsForParsedStringContents = true;
@@ -31,14 +41,6 @@ export class BracketingExpressionCompleterPyright implements ITypingAssist {
     const diagSink = new DiagnosticSink();
 
     const document = editor.document;
-
-    const unchangedVersion =
-      document.version - changeEvent.contentChanges.length;
-    const unchangedDocument = vscode.workspace.textDocuments.find(
-      (doc) =>
-        doc.uri.toString() === document.uri.toString() &&
-        doc.version === unchangedVersion
-    );
 
     // console.log(text);
     // console.log(unchangedDocument);
@@ -60,13 +62,38 @@ export class BracketingExpressionCompleterPyright implements ITypingAssist {
       return false;
     }
 
-    if (node.nodeType === ParseNodeType.BinaryOperation) {
-      this.targetNode = node;
-      return true;
+    let currentNode: undefined | ParseNode = node;
+    let nodesToModule = [];
+
+    // пропуск случаев когда мы на краю скобок
+    if (
+      isParenthesized(currentNode) &&
+      (currentNode.start + currentNode.length === offset ||
+        currentNode.start === offset)
+    ) {
+      currentNode = currentNode.parent;
     }
-    if (node.parent.nodeType === ParseNodeType.BinaryOperation) {
-      this.targetNode = node.parent;
-      return true;
+
+    while (currentNode) {
+      if (isParenthesized(currentNode)) {
+        return false;
+      }
+
+      nodesToModule.push(currentNode);
+      currentNode = currentNode.parent;
+    }
+
+    nodesToModule.reverse();
+
+    for (const currentNode of nodesToModule) {
+      if (
+        currentNode.nodeType === ParseNodeType.BinaryOperation &&
+        // проверка что мы не в конце или начале таргет ноды
+        currentNode.start + currentNode.length !== offset
+      ) {
+        this.targetNode = currentNode;
+        return true;
+      }
     }
 
     return false;
@@ -103,5 +130,45 @@ export class BracketingExpressionCompleterPyright implements ITypingAssist {
       },
       { undoStopAfter: false, undoStopBefore: false }
     );
+
+    let replaceText: string;
+    let columnOffset =
+      document.positionAt(this.targetNode.start).character -
+      changeEvent.contentChanges[0].text.length +
+      3;
+
+    if (columnOffset < 0) {
+      columnOffset = 0;
+    }
+
+    const indentationType = getActiveDocumentIndentationType();
+    if (indentationType === "Tabs") {
+      replaceText =
+        "\t".repeat(columnOffset / 4) + " ".repeat(columnOffset % 4);
+    } else {
+      replaceText = " ".repeat(columnOffset);
+    }
+
+    await editor.edit(
+      (editBuilder) => {
+        editBuilder.replace(editor.selection.active, replaceText);
+      },
+      { undoStopAfter: false, undoStopBefore: false }
+    );
+
+    await deleteSpacesAfterCoursor(editor);
   }
 }
+
+const isParenthesized = (currentNode: ParseNode) => {
+  return (
+    ((currentNode.nodeType === ParseNodeType.BinaryOperation ||
+      currentNode.nodeType === ParseNodeType.UnaryOperation) &&
+      currentNode.parenthesized) ||
+    (currentNode.nodeType === ParseNodeType.StringList &&
+      currentNode.isParenthesized) ||
+    currentNode.nodeType === ParseNodeType.Argument ||
+    currentNode.nodeType === ParseNodeType.List ||
+    currentNode.nodeType === ParseNodeType.Set
+  );
+};

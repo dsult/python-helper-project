@@ -16,6 +16,7 @@ import {
   FormatStringNode,
   ParseNode,
   StringNode,
+  isExpressionNode,
 } from "./lib/pyright-parser/parser/parseNodes";
 import { ParseTreeWalker } from "./lib/pyright-parser/analyzer/parseTreeWalker";
 import { BracketingExpressionCompleterPyright } from "./typing_assist/completer/BracketingExpressionCompleterPyright";
@@ -49,101 +50,21 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      const editor = assistService.editor!;
-      const position = editor.selection.active;
-      const offset = editor.document.offsetAt(editor.selection.active);
-      const currentNodeTS = assistService.tree.rootNode.descendantForPosition({
-        row: position.line,
-        column: position.character,
-      });
-      //   console.log(currentNodeTS);
-      //   console.log(assistService.tree.rootNode);
-
-      //   console.log("test1");
-      let parseOptions = new ParseOptions();
-      parseOptions.reportErrorsForParsedStringContents = true;
-      const parser = new Parser();
-      const diagSink = new DiagnosticSink();
-      let text;
-
-      text = editor.document.getText();
-
-      let some = parser.parseSourceFile(text, parseOptions, diagSink);
-
-      //   console.log(util.inspect(some.parserOutput.parseTree, { depth: null }));
-      //   console.log(some);
-
-      const nodePR = parseTreeUtils.findNodeByPosition(
-        some.parserOutput.parseTree,
-        editor.selection.active,
-        some.tokenizerOutput.lines
-      );
-
-      const token = parseTreeUtils.findTokenAfter(
-        some.tokenizerOutput,
-        offset,
-        () => true
-      );
-
-      if (!nodePR) {
-        return;
-      }
-
-      //   console.log("--------------------TOKEN--------------------");
-
-      //   console.log(token);
-      //   //   console.log(TokenType);
-
-      //   class StringNodeWalker extends ParseTreeWalker {
-      //     constructor(
-      //       private _callback: (node: StringNode | FormatStringNode) => void
-      //     ) {
-      //       super();
-      //     }
-
-      //     override visit(node: ParseNode) {
-      //       console.log(
-      //         "Node: ",
-      //         parseTreeUtils.printParseNodeType(node.nodeType)
-      //       );
-      //       return true;
-      //     }
-
-      //     override visitString(node: StringNode) {
-      //       this._callback(node);
-      //       //   console.log(node, node.value);
-      //       return true;
-      //     }
-      //     override visitFormatString(node: FormatStringNode) {
-      //       this._callback(node);
-      //       //   console.log(node, node.value);
-      //       return true;
-      //     }
+      //   let editor = vscode.window.activeTextEditor;
+      //   // Определяем правило подсветки для всех строк в синий цвет
+      //   let blueColorRule: vscode.DecorationOptions = {
+      //     range: new vscode.Range(0, 0, Number.MAX_VALUE, Number.MAX_VALUE), // Диапазон для всех строк
+      //     renderOptions: {
+      //       backgroundColor: "blue", // Синий цвет подсветки
+      //     },
+      //   };
+      //   // Применяем правило к текущему редактору
+      //   if (editor) {
+      //     let decoration =
+      //       vscode.window.createTextEditorDecorationType(blueColorRule);
+      //     editor.setDecorations(decoration, [blueColorRule.range]);
       //   }
-      //   console.log("--------------------WALKER--------------------");
-
-      //   let txtw = new StringNodeWalker((nodePR) =>
-      //     console.log(nodePR, nodePR.value)
-      //   );
-      //   txtw.walk(nodePR);
-      //   //   txtw.walk(some.parserOutput.parseTree);
-
-      console.log("--------------------PARENTS--------------------");
-      //   console.log(nodePR);
-      console.log(diagSink);
-
-      let currentNode = nodePR;
-      console.log(parseTreeUtils.printParseNodeType(currentNode.nodeType));
-      console.log(currentNode.parent);
-      while (currentNode.parent) {
-        console.log(
-          parseTreeUtils.printParseNodeType(currentNode.parent.nodeType)
-        );
-        console.log(currentNode.parent);
-
-        currentNode = currentNode.parent;
-      }
-      console.log("--------------------END--------------------");
+      console.log(132);
     }
   );
   context.subscriptions.push(disposable);
