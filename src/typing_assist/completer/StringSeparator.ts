@@ -178,7 +178,7 @@ export class StringSeparator implements ITypingAssist {
       } else {
         replaceText = " ".repeat(columnOffset);
       }
-      console.log(editor.options.insertSpaces);
+      //   console.log(editor.options.insertSpaces);
 
       await editor.edit(
         (editBuilder) => {

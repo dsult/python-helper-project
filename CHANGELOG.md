@@ -183,14 +183,23 @@ def f():
 
 - 0.4.2
 
+- добавлены папки грамматических токенизаторов
+
 ## [Unreleased]
+
+- ```
+  s = 111 + 222 - 333
+  ```
+
+скобочный пайрайтовский ассист тригерится внутри (нужны тесты)
+
+- ctrl+enter тригирит пайрайтовский ассист
 
 - ```
   print(s, 1<caret>23)
   ```
-  удаление тригерится
 
-```
+удаление тригерится
 
 - `rejected promise not handled within 1 second: RangeError: Invalid count value: -1
 extensionHostProcess.js:144
@@ -217,9 +226,3 @@ stack trace: RangeError: Invalid count value: -1
 - def def **()** тригерит ассист, дерево думает что второй деф это identifier
 - есть проблемы с **не**пробельной табуляцией
 - fr\\rf строки не обрабатываются
-
-```
-
-```
-
-```

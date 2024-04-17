@@ -10,6 +10,8 @@ import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 import { ParseOptions, Parser } from "./lib/pyright-parser/parser/parser";
 import { DiagnosticSink } from "./lib/pyright-parser/common/diagnosticSink";
 import * as parseTreeUtils from "./lib/pyright-parser/analyzer/parseTreeUtils";
+import * as fs from "fs";
+import * as path from "path";
 
 import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
 import {
@@ -46,29 +48,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(disposable);
 
-  // отладочная штука
-  disposable = vscode.commands.registerCommand(
-    "python-helper-project.test",
-    async () => {
-      //   let editor = vscode.window.activeTextEditor;
-      //   // Определяем правило подсветки для всех строк в синий цвет
-      //   let blueColorRule: vscode.DecorationOptions = {
-      //     range: new vscode.Range(0, 0, Number.MAX_VALUE, Number.MAX_VALUE), // Диапазон для всех строк
-      //     renderOptions: {
-      //       backgroundColor: "blue", // Синий цвет подсветки
-      //     },
-      //   };
-      //   // Применяем правило к текущему редактору
-      //   if (editor) {
-      //     let decoration =
-      //       vscode.window.createTextEditorDecorationType(blueColorRule);
-      //     editor.setDecorations(decoration, [blueColorRule.range]);
-      //   }
-      console.log(132);
-    }
-  );
-  context.subscriptions.push(disposable);
-
   disposable = vscode.commands.registerCommand(
     "python-helper-project.newDelete",
     // smartDeleteTreeSitter(assistService)
@@ -93,6 +72,19 @@ export async function activate(context: vscode.ExtensionContext) {
       );
     }
   });
+
+  // отладочная штука
+  disposable = vscode.commands.registerCommand(
+    "python-helper-project.test",
+    async () => {
+      const editor = vscode.window.activeTextEditor;
+      if (editor) {
+        await vscode.languages.setTextDocumentLanguage(editor.document, "json");
+      }
+      console.log(132);
+    }
+  );
+  context.subscriptions.push(disposable);
 }
 
 function setContextByConfiguration(context: string, configuration: string) {
