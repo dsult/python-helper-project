@@ -77,10 +77,6 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (editor) {
-        await vscode.languages.setTextDocumentLanguage(editor.document, "json");
-      }
       console.log(132);
     }
   );
