@@ -69,6 +69,11 @@
             ]
           },
           "description": "Enable/disable assist options"
+        },
+        "string-highlighting.json": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable JSON string highlighting (reload required)"
         }
       }
     },
@@ -76,7 +81,10 @@
       {
         "language": "python",
         "scopeName": "source.python",
-        "path": "./syntaxes/MagicPython.tmLanguage.json"
+        "path": "./syntaxes/MagicPython.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.json": {}
+        }
       },
       {
         "scopeName": "source.regexp.python",

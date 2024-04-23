@@ -61,6 +61,8 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   vscode.workspace.onDidChangeConfiguration((event) => {
+    console.log(event);
+
     if (
       event.affectsConfiguration(
         "typing-assist.enableCursorDownAfterCommentLine"
@@ -70,6 +72,19 @@ export async function activate(context: vscode.ExtensionContext) {
         "typing-assist.isCursorDownAfterCommentLineOn",
         "typing-assist.enableCursorDownAfterCommentLine"
       );
+    }
+
+    if (event.affectsConfiguration("string-highlighting.json")) {
+      const config: any = vscode.workspace
+        .getConfiguration()
+        .get("string-highlighting.json");
+      const filePath = path.join(
+        context.extensionPath,
+        "syntaxes",
+        "MagicPython.tmLanguage.json"
+      );
+      const includeSetting = "#embedded.source.json";
+      updatePatternDisabled(filePath, includeSetting, config);
     }
   });
 
@@ -83,6 +98,41 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(disposable);
 }
 
+function updatePatternDisabled(
+  filePath: string,
+  includeSetting: string,
+  config: boolean
+): void {
+  const fileContent = fs.readFileSync(filePath, "utf-8");
+
+  const languageDefinition = JSON.parse(fileContent);
+
+  let patterns: any[] = languageDefinition.patterns;
+  if (config) {
+    let patternToAdd = {
+      include: includeSetting,
+    };
+
+    let patterns = languageDefinition.patterns;
+
+    patterns.unshift(patternToAdd);
+  } else {
+    for (let i = 0; i < patterns.length; i++) {
+      let pattern = patterns[i];
+
+      if (pattern.include === includeSetting) {
+        patterns.splice(i, 1);
+        i--;
+      }
+    }
+  }
+
+  // Преобразовать объект обратно в JSON
+  const updatedContent = JSON.stringify(languageDefinition, null, 2);
+
+  // Записать обновленное содержимое обратно в файл
+  fs.writeFileSync(filePath, updatedContent, "utf-8");
+}
 function setContextByConfiguration(context: string, configuration: string) {
   const config = vscode.workspace.getConfiguration().get(configuration);
 
