@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.4.2",
+  "version": "0.4.4",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -74,21 +74,34 @@
           "type": "boolean",
           "default": true,
           "description": "Enable JSON string highlighting (reload required)"
+        },
+        "string-highlighting.xml": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable XML string highlighting (reload required)"
         }
       }
     },
     "grammars": [
       {
-        "language": "python",
-        "scopeName": "source.python",
-        "path": "./syntaxes/MagicPython.tmLanguage.json",
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-xml",
+        "path": "./syntaxes/python-xml.json",
         "embeddedLanguages": {
-          "source.json": {}
+          "meta.embedded.block.xml": "xml"
         }
       },
       {
-        "scopeName": "source.regexp.python",
-        "path": "./syntaxes/MagicRegExp.tmLanguage.json"
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-json",
+        "path": "./syntaxes/python-json.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json": "json"
+        }
       }
     ]
   },

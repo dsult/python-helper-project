@@ -7,21 +7,15 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 
-import { ParseOptions, Parser } from "./lib/pyright-parser/parser/parser";
-import { DiagnosticSink } from "./lib/pyright-parser/common/diagnosticSink";
-import * as parseTreeUtils from "./lib/pyright-parser/analyzer/parseTreeUtils";
-import * as fs from "fs";
 import * as path from "path";
 
 import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
-import {
-  FormatStringNode,
-  ParseNode,
-  StringNode,
-  isExpressionNode,
-} from "./lib/pyright-parser/parser/parseNodes";
-import { ParseTreeWalker } from "./lib/pyright-parser/analyzer/parseTreeWalker";
 import { BracketingExpressionCompleterPyright } from "./typing_assist/completer/BracketingExpressionCompleterPyright";
+import {
+  setContextByConfiguration,
+  addPattern,
+  removePattern,
+} from "./utilsExtension";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -37,7 +31,9 @@ export async function activate(context: vscode.ExtensionContext) {
     new ReturnDedent(),
   ]);
 
-  vscode.window.onDidChangeActiveTextEditor((e) => assistService.changeDoc(e));
+  vscode.window.onDidChangeActiveTextEditor(
+    (e: vscode.TextEditor | undefined) => assistService.changeDoc(e)
+  );
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
     // console.log(e);
@@ -78,13 +74,53 @@ export async function activate(context: vscode.ExtensionContext) {
       const config: any = vscode.workspace
         .getConfiguration()
         .get("string-highlighting.json");
-      const filePath = path.join(
+
+      const grammarFilePath = path.join(
         context.extensionPath,
         "syntaxes",
-        "MagicPython.tmLanguage.json"
+        "python-json.json"
       );
-      const includeSetting = "#embedded.source.json";
-      updatePatternDisabled(filePath, includeSetting, config);
+
+      const patternFilePath = path.join(
+        context.extensionPath,
+        "syntaxes",
+        "python-json-pattern.json"
+      );
+
+      let isEnabled = vscode.workspace
+        .getConfiguration()
+        .get("string-highlighting.json");
+      if (isEnabled) {
+        addPattern(grammarFilePath, patternFilePath);
+      } else {
+        removePattern(grammarFilePath);
+      }
+    }
+    if (event.affectsConfiguration("string-highlighting.xml")) {
+      const config: any = vscode.workspace
+        .getConfiguration()
+        .get("string-highlighting.xml");
+
+      const grammarFilePath = path.join(
+        context.extensionPath,
+        "syntaxes",
+        "python-xml.json"
+      );
+
+      const patternFilePath = path.join(
+        context.extensionPath,
+        "syntaxes",
+        "python-xml-pattern.json"
+      );
+
+      let isEnabled = vscode.workspace
+        .getConfiguration()
+        .get("string-highlighting.xml");
+      if (isEnabled) {
+        addPattern(grammarFilePath, patternFilePath);
+      } else {
+        removePattern(grammarFilePath);
+      }
     }
   });
 
@@ -92,51 +128,10 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      console.log(132);
+      console.log(123);
     }
   );
   context.subscriptions.push(disposable);
-}
-
-function updatePatternDisabled(
-  filePath: string,
-  includeSetting: string,
-  config: boolean
-): void {
-  const fileContent = fs.readFileSync(filePath, "utf-8");
-
-  const languageDefinition = JSON.parse(fileContent);
-
-  let patterns: any[] = languageDefinition.patterns;
-  if (config) {
-    let patternToAdd = {
-      include: includeSetting,
-    };
-
-    let patterns = languageDefinition.patterns;
-
-    patterns.unshift(patternToAdd);
-  } else {
-    for (let i = 0; i < patterns.length; i++) {
-      let pattern = patterns[i];
-
-      if (pattern.include === includeSetting) {
-        patterns.splice(i, 1);
-        i--;
-      }
-    }
-  }
-
-  // Преобразовать объект обратно в JSON
-  const updatedContent = JSON.stringify(languageDefinition, null, 2);
-
-  // Записать обновленное содержимое обратно в файл
-  fs.writeFileSync(filePath, updatedContent, "utf-8");
-}
-function setContextByConfiguration(context: string, configuration: string) {
-  const config = vscode.workspace.getConfiguration().get(configuration);
-
-  vscode.commands.executeCommand("setContext", context, config);
 }
 
 export function deactivate() {}

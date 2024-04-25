@@ -1,0 +1,6 @@
+{
+  "fileTypes": [],
+  "injectionSelector": "L:source.python -comment -(string -meta.embedded)",
+  "patterns": [],
+  "scopeName": "text.python-xml"
+}
