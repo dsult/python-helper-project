@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -82,6 +82,20 @@
         }
       }
     },
+    "languages": [
+      {
+        "id": "django-html",
+        "aliases": [
+          "Django HTML",
+          "django"
+        ],
+        "filenamePatterns": [
+          "**/templates/**/*.html"
+        ],
+        "firstLine": "{%",
+        "configuration": "./language-configuration.json"
+      }
+    ],
     "grammars": [
       {
         "injectTo": [
@@ -102,6 +116,11 @@
         "embeddedLanguages": {
           "meta.embedded.block.json": "json"
         }
+      },
+      {
+        "language": "django-html",
+        "scopeName": "text.html.django",
+        "path": "./syntaxes/django-html.tmLanguage.json"
       }
     ]
   },
@@ -111,7 +130,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "benchmark": "node parser_benchmark/benchmark.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

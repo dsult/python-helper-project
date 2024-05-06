@@ -7,15 +7,15 @@ import { NewlineSpaceRemover } from "./typing_assist/completer/NewlineSpaceRemov
 import { CommentSeparator } from "./typing_assist/completer/CommentSeparator";
 import { ReturnDedent } from "./typing_assist/completer/ReturnDedent";
 
-import * as path from "path";
-
 import { smartDeletePyright } from "./smart_delete/smartDeletePyright";
 import { BracketingExpressionCompleterPyright } from "./typing_assist/completer/BracketingExpressionCompleterPyright";
 import {
   setContextByConfiguration,
   addPattern,
   removePattern,
+  changeConfiguration,
 } from "./utilsExtension";
+import { smartDeleteTreeSitter } from "./smart_delete/smartDeleteTreeSitter";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -36,8 +36,6 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   disposable = vscode.workspace.onDidChangeTextDocument((e) => {
-    // console.log(e);
-    // console.log(e.document.getText());
     assistService.processing(e);
     assistService.updateTree(e);
   });
@@ -46,8 +44,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
   disposable = vscode.commands.registerCommand(
     "python-helper-project.newDelete",
-    // smartDeleteTreeSitter(assistService)
-    smartDeletePyright()
+    smartDeleteTreeSitter(assistService)
+    // smartDeletePyright()
   );
   context.subscriptions.push(disposable);
 
@@ -56,79 +54,31 @@ export async function activate(context: vscode.ExtensionContext) {
     "typing-assist.enableCursorDownAfterCommentLine"
   );
 
-  vscode.workspace.onDidChangeConfiguration((event) => {
-    console.log(event);
-
-    if (
-      event.affectsConfiguration(
-        "typing-assist.enableCursorDownAfterCommentLine"
-      )
-    ) {
-      setContextByConfiguration(
-        "typing-assist.isCursorDownAfterCommentLineOn",
-        "typing-assist.enableCursorDownAfterCommentLine"
-      );
-    }
-
-    if (event.affectsConfiguration("string-highlighting.json")) {
-      const config: any = vscode.workspace
-        .getConfiguration()
-        .get("string-highlighting.json");
-
-      const grammarFilePath = path.join(
-        context.extensionPath,
-        "syntaxes",
-        "python-json.json"
-      );
-
-      const patternFilePath = path.join(
-        context.extensionPath,
-        "syntaxes",
-        "python-json-pattern.json"
-      );
-
-      let isEnabled = vscode.workspace
-        .getConfiguration()
-        .get("string-highlighting.json");
-      if (isEnabled) {
-        addPattern(grammarFilePath, patternFilePath);
-      } else {
-        removePattern(grammarFilePath);
-      }
-    }
-    if (event.affectsConfiguration("string-highlighting.xml")) {
-      const config: any = vscode.workspace
-        .getConfiguration()
-        .get("string-highlighting.xml");
-
-      const grammarFilePath = path.join(
-        context.extensionPath,
-        "syntaxes",
-        "python-xml.json"
-      );
-
-      const patternFilePath = path.join(
-        context.extensionPath,
-        "syntaxes",
-        "python-xml-pattern.json"
-      );
-
-      let isEnabled = vscode.workspace
-        .getConfiguration()
-        .get("string-highlighting.xml");
-      if (isEnabled) {
-        addPattern(grammarFilePath, patternFilePath);
-      } else {
-        removePattern(grammarFilePath);
-      }
-    }
-  });
+  vscode.workspace.onDidChangeConfiguration((e) =>
+    changeConfiguration(e, context)
+  );
 
   // отладочная штука
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
+      const tree = assistService.tree;
+      let editor = assistService.editor;
+
+      if (!editor) {
+        return;
+      }
+
+      const position = editor.selection.active;
+
+      const currentNode = tree.rootNode.descendantForPosition({
+        row: position.line,
+        column: position.character,
+      });
       console.log(123);
+      console.log(assistService.tree);
+      console.log(currentNode);
+      console.log(currentNode.text);
     }
   );
   context.subscriptions.push(disposable);

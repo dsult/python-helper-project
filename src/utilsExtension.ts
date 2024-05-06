@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-
+import * as path from "path";
 import * as fs from "fs";
 
 // Функция для добавления паттерна
@@ -32,4 +32,71 @@ export function setContextByConfiguration(
   const config = vscode.workspace.getConfiguration().get(configuration);
 
   vscode.commands.executeCommand("setContext", context, config);
+}
+
+export function changeConfiguration(
+  event: vscode.ConfigurationChangeEvent,
+  context: vscode.ExtensionContext
+) {
+  if (
+    event.affectsConfiguration("typing-assist.enableCursorDownAfterCommentLine")
+  ) {
+    setContextByConfiguration(
+      "typing-assist.isCursorDownAfterCommentLineOn",
+      "typing-assist.enableCursorDownAfterCommentLine"
+    );
+  }
+
+  if (event.affectsConfiguration("string-highlighting.json")) {
+    const config: any = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.json");
+
+    const grammarFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-json.json"
+    );
+
+    const patternFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-json-pattern.json"
+    );
+
+    let isEnabled = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.json");
+    if (isEnabled) {
+      addPattern(grammarFilePath, patternFilePath);
+    } else {
+      removePattern(grammarFilePath);
+    }
+  }
+  if (event.affectsConfiguration("string-highlighting.xml")) {
+    const config: any = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.xml");
+
+    const grammarFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-xml.json"
+    );
+
+    const patternFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-xml-pattern.json"
+    );
+
+    let isEnabled = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.xml");
+    if (isEnabled) {
+      addPattern(grammarFilePath, patternFilePath);
+    } else {
+      removePattern(grammarFilePath);
+    }
+  }
 }

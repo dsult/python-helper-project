@@ -1,6 +1,28 @@
 {
   "fileTypes": [],
   "injectionSelector": "L:source.python -comment -(string -meta.embedded)",
-  "patterns": [],
+  "patterns": [
+    {
+      "name": "string.quoted",
+      "contentName": "meta.embedded.block.xml",
+      "begin": "('''|\"\"\"|')\\s*(?=<.*>.*\\s*('''|\"\"\"|'))",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.python"
+        }
+      },
+      "end": "('''|\"\"\"|')",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.python"
+        }
+      },
+      "patterns": [
+        {
+          "include": "text.xml"
+        }
+      ]
+    }
+  ],
   "scopeName": "text.python-xml"
 }
