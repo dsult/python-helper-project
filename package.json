@@ -118,6 +118,16 @@
         }
       },
       {
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-css",
+        "path": "./syntaxes/python-css.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json": "css"
+        }
+      },
+      {
         "language": "django-html",
         "scopeName": "text.html.django",
         "path": "./syntaxes/django-html.tmLanguage.json"
