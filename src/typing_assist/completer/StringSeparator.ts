@@ -12,16 +12,6 @@ import {
 export class StringSeparator implements ITypingAssist {
   optionName: string = "StringSeparator";
 
-  isOn(): Boolean {
-    const assistOptions = vscode.workspace
-      .getConfiguration()
-      .get("typing-assist.assistOptions");
-    const stringSeparatorEnabled =
-      Array.isArray(assistOptions) && assistOptions.includes("stringSeparator");
-
-    return stringSeparatorEnabled;
-  }
-
   readonly STRING_NODE_ID = 200;
   readonly QUOTE_NODE_ID = 100;
   readonly SPECIAL_CHARACTER_NODE_ID = 86;
@@ -81,49 +71,51 @@ export class StringSeparator implements ITypingAssist {
     }) as ExtendedSyntaxNode;
 
     if (position) {
-      let stringtNode: SyntaxNode;
+      let stringNode: SyntaxNode;
 
       switch (currentNode.typeId) {
         case this.STRING_NODE_ID:
-          stringtNode = currentNode;
+          stringNode = currentNode;
           break;
         case this.QUOTE_NODE_ID:
         case this.SPECIAL_CHARACTER_NODE_ID:
-          stringtNode = currentNode.parent!;
+          stringNode = currentNode.parent!;
           break;
         case this.BRACE_NODE_ID:
-          stringtNode = currentNode.parent!.parent!;
+          stringNode = currentNode.parent!.parent!;
           break;
         default:
-          stringtNode = currentNode;
+          stringNode = currentNode;
           break;
       }
 
       let ofs1 = editor.document.offsetAt(position);
       let ofs2 = ofs1 + changeEvent.contentChanges[0].text.length;
 
-      const openQuoteText = stringtNode.firstChild!.text;
-      const closeQuoteText = stringtNode.lastChild!.text;
+      //   console.log(stringNode);
 
-      let columnOffset = stringtNode.firstChild!.startPosition.column;
+      const openQuoteText = stringNode.firstChild!.text;
+      const closeQuoteText = stringNode.lastChild!.text;
+
+      let columnOffset = stringNode.startPosition.column;
 
       if (
-        stringtNode.parent &&
-        (stringtNode.parent.type === "assignment" ||
-          stringtNode.parent.type === "return_statement" ||
-          stringtNode.parent.type === "augmented_assignment" ||
-          stringtNode.parent.type === "comparison_operator" ||
-          stringtNode.parent.type === "binary_operator") &&
+        stringNode.parent &&
+        (stringNode.parent.type === "assignment" ||
+          stringNode.parent.type === "return_statement" ||
+          stringNode.parent.type === "augmented_assignment" ||
+          stringNode.parent.type === "comparison_operator" ||
+          stringNode.parent.type === "binary_operator") &&
         !(
-          hasParentWithType(stringtNode, "parenthesized_expression") ||
-          hasParentWithType(stringtNode, "argument_list")
+          hasParentWithType(stringNode, "parenthesized_expression") ||
+          hasParentWithType(stringNode, "argument_list")
         )
       ) {
         // parenthesized_expression
         // parenthesized_expression
-        const pos1 = editor.document.positionAt(stringtNode.startIndex);
+        const pos1 = editor.document.positionAt(stringNode.startIndex);
         const pos2 = editor.document.positionAt(
-          stringtNode.endIndex + changeEvent.contentChanges[0].text.length
+          stringNode.endIndex + changeEvent.contentChanges[0].text.length
         );
         ofs1 += openQuoteText.length;
         ofs2 += closeQuoteText.length;
@@ -159,10 +151,12 @@ export class StringSeparator implements ITypingAssist {
         { undoStopAfter: false, undoStopBefore: false }
       );
 
-      columnOffset =
-        stringtNode.startPosition.column -
-        changeEvent.contentChanges[0].text.length +
-        2;
+      columnOffset -= changeEvent.contentChanges[0].text.length - 2;
+
+      //   columnOffset =
+      //     stringNode.startPosition.column -
+      //     changeEvent.contentChanges[0].text.length +
+      //     2;
 
       if (columnOffset < 0) {
         columnOffset = 0;
@@ -172,13 +166,12 @@ export class StringSeparator implements ITypingAssist {
 
       const indentationType = getActiveDocumentIndentationType();
       if (indentationType === "Tabs") {
-        const repColumnOffset = columnOffset - 1;
         replaceText =
-          "\t".repeat(repColumnOffset / 4) + " ".repeat(repColumnOffset % 4);
+          "\t".repeat(columnOffset / 4) + " ".repeat(columnOffset % 4);
       } else {
         replaceText = " ".repeat(columnOffset);
       }
-      console.log(editor.options.insertSpaces);
+      //   console.log(editor.options.insertSpaces);
 
       await editor.edit(
         (editBuilder) => {

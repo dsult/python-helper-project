@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.4.2",
+  "version": "0.4.6",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -69,9 +69,75 @@
             ]
           },
           "description": "Enable/disable assist options"
+        },
+        "string-highlighting.json": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable JSON string highlighting (reload required)"
+        },
+        "string-highlighting.xml": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable XML string highlighting (reload required)"
+        },
+        "string-highlighting.css": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable CSS string highlighting (reload required)"
         }
       }
-    }
+    },
+    "languages": [
+      {
+        "id": "django-html",
+        "aliases": [
+          "Django HTML",
+          "django"
+        ],
+        "filenamePatterns": [
+          "**/templates/**/*.html"
+        ],
+        "firstLine": "{%",
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-xml",
+        "path": "./syntaxes/python-xml.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.xml": "xml"
+        }
+      },
+      {
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-json",
+        "path": "./syntaxes/python-json.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json": "json"
+        }
+      },
+      {
+        "injectTo": [
+          "source.python"
+        ],
+        "scopeName": "text.python-css",
+        "path": "./syntaxes/python-css.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.json": "css"
+        }
+      },
+      {
+        "language": "django-html",
+        "scopeName": "text.html.django",
+        "path": "./syntaxes/django-html.tmLanguage.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
@@ -79,7 +145,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "benchmark": "node parser_benchmark/benchmark.js"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

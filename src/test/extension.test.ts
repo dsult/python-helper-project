@@ -13,22 +13,22 @@ targetDir = __dirname + "/typing_assist";
 FoldersAndFiles = getFoldersAndFiles(targetDir);
 
 for (const suiteName in FoldersAndFiles) {
-  if (suiteName !== "BracketingExpressionCompleter") {
-    continue;
-  }
+  //   if (suiteName !== "StringSeparator") {
+  //     continue;
+  //   }
   const testNames = FoldersAndFiles[suiteName];
   makeAssistSuite(suiteName, testNames, targetDir);
 }
 
-// ctrl + backspace
+// // ctrl + backspace
 
-// targetDir = __dirname + "/smart_backspace";
-// FoldersAndFiles = getFoldersAndFiles(targetDir);
+targetDir = __dirname + "/smart_backspace";
+FoldersAndFiles = getFoldersAndFiles(targetDir);
 
-// for (const suiteName in FoldersAndFiles) {
-//   //   if (suiteName !== "CommentSeparator") {
-//   //     continue;
-//   //   }
-//   const testNames = FoldersAndFiles[suiteName];
-//   makeCommandSuite(suiteName, testNames, targetDir);
-// }
+for (const suiteName in FoldersAndFiles) {
+  //   if (suiteName !== "CommentSeparator") {
+  //     continue;
+  //   }
+  const testNames = FoldersAndFiles[suiteName];
+  makeCommandSuite(suiteName, testNames, targetDir);
+}

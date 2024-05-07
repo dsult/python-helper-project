@@ -1,0 +1,28 @@
+{
+  "fileTypes": [],
+  "injectionSelector": "L:source.python -comment -(string -meta.embedded)",
+  "patterns": [
+    {
+      "name": "string.quoted",
+      "contentName": "meta.embedded.block.css",
+      "begin": "((?<=find_element\\(By\\.CSS_SELECTOR,\\s*)(')|(')(?=(div|a)(\\.|\\[|#)))\\s*",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.python"
+        }
+      },
+      "end": "(')",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.python"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.css.styled"
+        }
+      ]
+    }
+  ],
+  "scopeName": "text.python-css"
+}
