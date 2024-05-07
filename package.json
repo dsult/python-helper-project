@@ -2,7 +2,7 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -79,6 +79,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable XML string highlighting (reload required)"
+        },
+        "string-highlighting.css": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable CSS string highlighting (reload required)"
         }
       }
     },

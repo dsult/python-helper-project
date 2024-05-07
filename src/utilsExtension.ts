@@ -99,4 +99,31 @@ export function changeConfiguration(
       removePattern(grammarFilePath);
     }
   }
+
+  if (event.affectsConfiguration("string-highlighting.css")) {
+    const config: any = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.css");
+
+    const grammarFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-css.json"
+    );
+
+    const patternFilePath = path.join(
+      context.extensionPath,
+      "syntaxes",
+      "python-css-pattern.json"
+    );
+
+    let isEnabled = vscode.workspace
+      .getConfiguration()
+      .get("string-highlighting.css");
+    if (isEnabled) {
+      addPattern(grammarFilePath, patternFilePath);
+    } else {
+      removePattern(grammarFilePath);
+    }
+  }
 }
