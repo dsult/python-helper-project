@@ -11,7 +11,7 @@ export class PyrightParser implements IParser {
   constructor() {}
 
   async init(): Promise<void> {
-    return;
+    this.parser = new Parser();
   }
   parse(text: string) {
     return this.parser.parseSourceFile(

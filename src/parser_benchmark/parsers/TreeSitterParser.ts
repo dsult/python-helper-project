@@ -1,6 +1,8 @@
 import Parser from "web-tree-sitter";
 import { IParser } from "../types";
 
+let language: Parser.Language | null | undefined = null;
+
 export class TreeSitterParser implements IParser {
   public title: string = "tree-sitter";
 
@@ -9,14 +11,19 @@ export class TreeSitterParser implements IParser {
   constructor() {}
 
   async init(): Promise<void> {
+    if (this.parser) {
+      this.parser.delete();
+    }
     await Parser.init(); // Call init on the imported module
-
     const path = require("path");
     const wasmPath = path.join(__dirname, "../../lib/tree-sitter-python.wasm");
-    const Python = await Parser.Language.load(wasmPath);
+    if (!language) {
+      language = await Parser.Language.load(wasmPath);
+    }
 
     let parser = new Parser(); // Create a new instance of the Parser
-    parser.setLanguage(Python);
+    parser.reset();
+    parser.setLanguage(language);
 
     this.parser = parser;
     return;

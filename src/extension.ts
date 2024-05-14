@@ -16,6 +16,9 @@ import {
   changeConfiguration,
 } from "./utilsExtension";
 import { smartDeleteTreeSitter } from "./smart_delete/smartDeleteTreeSitter";
+import { PythonLexer } from "./lib/antlr/PythonLexer";
+import { PythonParser } from "./lib/antlr/PythonParser";
+import { ANTLRInputStream, CharStreams, CommonTokenStream } from "antlr4ts";
 
 let disposable: vscode.Disposable | undefined;
 
@@ -62,23 +65,29 @@ export async function activate(context: vscode.ExtensionContext) {
   disposable = vscode.commands.registerCommand(
     "python-helper-project.test",
     async () => {
-      const tree = assistService.tree;
-      let editor = assistService.editor;
+      // Create the lexer and parser
+      let inputStream = CharStreams.fromString("print(123)");
+      let lexer = new PythonLexer(inputStream);
+      let tokenStream = new CommonTokenStream(lexer);
+      let parser = new PythonParser(tokenStream);
+      // Parse the input, where `compilationUnit` is whatever entry point you defined
+      let tree = parser.file_input();
+      console.log(tree);
 
-      if (!editor) {
-        return;
-      }
-
-      const position = editor.selection.active;
-
-      const currentNode = tree.rootNode.descendantForPosition({
-        row: position.line,
-        column: position.character,
-      });
-      console.log(123);
-      console.log(assistService.tree);
-      console.log(currentNode);
-      console.log(currentNode.text);
+      //   const tree = assistService.tree;
+      //   let editor = assistService.editor;
+      //   if (!editor) {
+      //     return;
+      //   }
+      //   const position = editor.selection.active;
+      //   const currentNode = tree.rootNode.descendantForPosition({
+      //     row: position.line,
+      //     column: position.character,
+      //   });
+      //   console.log(123);
+      //   console.log(assistService.tree);
+      //   console.log(currentNode);
+      //   console.log(currentNode.text);
     }
   );
   context.subscriptions.push(disposable);
