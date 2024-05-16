@@ -2,6 +2,10 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
+y_max = 8
+
+
+
 # Чтение данных из JSON-файла
 with open('results.json', 'r') as f:
     data = json.load(f)
@@ -19,55 +23,44 @@ for item in data:
     antlr_times.append(item['antlrTime'])
     sizes.append(item['size'])
 
-# Функция для удаления выбросов выше 99-го процентиля
-def remove_outliers(x, y):
-    threshold = np.percentile(y, 99.5)
-    x_filtered = [x[i] for i in range(len(y)) if y[i] <= threshold]
-    y_filtered = [y[i] for i in range(len(y)) if y[i] <= threshold]
-    return x_filtered, y_filtered
 
-# Применение функции к данным
-sizes_tree_sitter, tree_sitter_times_filtered = remove_outliers(sizes, tree_sitter_times)
-sizes_pyright, pyright_times_filtered = remove_outliers(sizes, pyright_times)
-sizes_antlr, antlr_times_filtered = remove_outliers(sizes, antlr_times)
+# Вычисление средних значений
+mean_tree_sitter = np.mean(tree_sitter_times)
+mean_pyright = np.mean(pyright_times)
+mean_antlr = np.mean(antlr_times)
+
+
+
+# вывод инфы
+print(f'Всего файлов: {len(tree_sitter_times)}')
+print('--------------')
+print(f'Среднее время выполнения для Tree Sitter: {mean_tree_sitter:.2f} мс')
+print(f'Среднее время выполнения для Pyright: {mean_pyright:.2f} мс')
+print(f'Среднее время выполнения для antlr: {mean_antlr:.2f} мс')
 
 # Построение графика времени выполнения парсеров в зависимости от размера
-plt.figure(figsize=(10, 6))
-plt.scatter(sizes_tree_sitter, tree_sitter_times_filtered, label='Tree Sitter', s=20, alpha=0.5, color='blue')
-plt.scatter(sizes_pyright, pyright_times_filtered, label='Pyright', s=20, alpha=0.5, color='orange')
-plt.scatter(sizes_antlr, antlr_times_filtered, label='antlr', s=20, alpha=0.5, color='green')
+plt.figure(figsize=(14, 8))  # Увеличенный размер фигуры
+plt.scatter(sizes, tree_sitter_times, label='Tree Sitter', alpha=0.7, zorder=2)
+plt.scatter(sizes, pyright_times, label='Pyright', alpha=0.7, zorder=3)
+plt.scatter(sizes, antlr_times, label='antlr', alpha=0.7, zorder=1)
 
-# Сортировка массивов по размеру файла
-sorted_indices = np.argsort(sizes)
-sizes_sorted = np.array(sizes)[sorted_indices]
-tree_sitter_times_sorted = np.array(tree_sitter_times)[sorted_indices]
-pyright_times_sorted = np.array(pyright_times)[sorted_indices]
-antlr_times_sorted = np.array(antlr_times)[sorted_indices]
-
-# Применение функции удаления выбросов к отсортированным данным
-sizes_tree_sitter, tree_sitter_times_filtered = remove_outliers(sizes_sorted, tree_sitter_times_sorted)
-sizes_pyright, pyright_times_filtered = remove_outliers(sizes_sorted, pyright_times_sorted)
-sizes_antlr, antlr_times_filtered = remove_outliers(sizes_sorted, antlr_times_sorted)
-
-# Подгонка полиномиальной модели и построение линии тренда для каждого парсера
-z_tree_sitter = np.polyfit(sizes_tree_sitter, tree_sitter_times_filtered, 1)
+# Линии тренда
+z_tree_sitter = np.polyfit(sizes, tree_sitter_times, 1)
 p_tree_sitter = np.poly1d(z_tree_sitter)
-plt.plot(sizes_tree_sitter, p_tree_sitter(sizes_tree_sitter), "b--")
+plt.plot(sizes, p_tree_sitter(sizes), color='blue', linestyle='-', linewidth=2, label='Tree Sitter Trend', zorder=4)
 
-z_pyright = np.polyfit(sizes_pyright, pyright_times_filtered, 1)
+z_pyright = np.polyfit(sizes, pyright_times, 1)
 p_pyright = np.poly1d(z_pyright)
-plt.plot(sizes_pyright, p_pyright(sizes_pyright), "y--")
+plt.plot(sizes, p_pyright(sizes), color='orange', linestyle='-', linewidth=2, label='Pyright Trend', zorder=4)
 
-z_antlr = np.polyfit(sizes_antlr, antlr_times_filtered, 1)
+z_antlr = np.polyfit(sizes, antlr_times, 1)
 p_antlr = np.poly1d(z_antlr)
-plt.plot(sizes_antlr, p_antlr(sizes_antlr), "g--")
-
+plt.plot(sizes, p_antlr(sizes), color='green', linestyle='-', linewidth=2, label='antlr Trend', zorder=4)
 
 plt.xlabel('Размер файла')
-plt.ylabel('Время выполнения (ms)')
-plt.title('График времени выполнения парсеров в зависимости от размера файла (в символах)')
+plt.ylabel('Время выполнения (млсек)')
+plt.title('График времени выполнения парсеров в зависимости от размера файла')
 plt.legend()
 plt.grid(True)
-# plt.xscale('log')
-
+plt.ylim(0, y_max)  # Ограничение по оси Y для исключения выбросов
 plt.show()
