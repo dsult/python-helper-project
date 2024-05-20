@@ -1,7 +1,7 @@
 {
   "name": "string.quoted",
   "contentName": "meta.embedded.block.css",
-  "begin": "((?<=find_element\\(By\\.CSS_SELECTOR,\\s*)(')|(')(?=(div|a)(\\.|\\[|#)))\\s*",
+  "begin": "((?<=By\\.CSS_SELECTOR,\\s*)(')|(')(?=(div|a)(\\.|\\[|#)))\\s*",
   "beginCaptures": {
     "0": {
       "name": "punctuation.definition.string.begin.python"

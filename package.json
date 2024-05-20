@@ -133,6 +133,10 @@
         }
       },
       {
+        "scopeName": "source.css.styled",
+        "path": "./syntaxes/css.styled.json"
+      },
+      {
         "language": "django-html",
         "scopeName": "text.html.django",
         "path": "./syntaxes/django-html.tmLanguage.json"

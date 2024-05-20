@@ -1,6 +1,28 @@
 {
   "fileTypes": [],
   "injectionSelector": "L:source.python -comment -(string -meta.embedded)",
-  "patterns": [],
+  "patterns": [
+    {
+      "name": "string.quoted",
+      "contentName": "meta.embedded.block.json",
+      "begin": "('''|\"\"\"|')\\s*(?=([{\\[]{1}([,:{}\\[\\]0-9.\\-+Eaeflnr-u \\n\\r\\t]|\".*?\")+[}\\]]{1}).*\\s*('''|\"\"\"|'))",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.begin.python"
+        }
+      },
+      "end": "('''|\"\"\"|')",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.end.python"
+        }
+      },
+      "patterns": [
+        {
+          "include": "source.json"
+        }
+      ]
+    }
+  ],
   "scopeName": "text.python-json"
 }
