@@ -129,7 +129,7 @@
         "scopeName": "text.python-css",
         "path": "./syntaxes/python-css.json",
         "embeddedLanguages": {
-          "meta.embedded.block.json": "css"
+          "meta.embedded.block.css": "css"
         }
       },
       {

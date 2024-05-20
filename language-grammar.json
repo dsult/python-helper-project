@@ -1,9 +1,0 @@
-{
-  "scopeName": "source.example",
-  "patterns": [
-    {
-      "match": "^.*$",
-      "name": "example.blue"
-    }
-  ]
-}
