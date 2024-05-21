@@ -12,6 +12,16 @@
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "${defaultBuildTask}"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug TypeScript",
+      "runtimeArgs": ["-r", "ts-node/register/transpile-only"],
+      "args": ["${workspaceFolder}/src/parser_benchmark/benchmark.ts"],
+      "sourceMaps": true,
+      "cwd": "${workspaceFolder}",
+      "protocol": "inspector"
     }
   ]
 }

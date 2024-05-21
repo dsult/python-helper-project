@@ -2,7 +2,8 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.4.6",
+  "version": "0.5.1",
+  "repository": "https://github.com/dsult/python-helper-project",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -129,8 +130,12 @@
         "scopeName": "text.python-css",
         "path": "./syntaxes/python-css.json",
         "embeddedLanguages": {
-          "meta.embedded.block.json": "css"
+          "meta.embedded.block.css": "css"
         }
+      },
+      {
+        "scopeName": "source.css.styled",
+        "path": "./syntaxes/css.styled.json"
       },
       {
         "language": "django-html",
@@ -140,13 +145,15 @@
     ]
   },
   "scripts": {
+    "package": "vsce package",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./ && xcopy /E /I /Y src\\lib out\\lib && xcopy /E /I /Y src\\test out\\test",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test",
-    "benchmark": "node parser_benchmark/benchmark.js"
+    "benchmark": "ts-node src/parser_benchmark/benchmark.ts",
+    "antlr4ts": "antlr4ts -o src/lib/antlr src/lib/antlr/PythonLexer.g4 && antlr4ts -o src/lib/antlr src/lib/antlr/PythonParser.g4"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -157,12 +164,17 @@
     "@typescript-eslint/parser": "^6.15.0",
     "@vscode/test-cli": "^0.0.4",
     "@vscode/test-electron": "^2.3.9",
+    "antlr4ts-cli": "^0.5.0-alpha.4",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "antlr4ts": "^0.5.0-alpha.4",
+    "benchmark": "^2.1.4",
+    "cli-progress": "^3.12.0",
     "vscode-jsonrpc": "^8.2.0",
     "web-tree-sitter": "^0.20.8"
   }
