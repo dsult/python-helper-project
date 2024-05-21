@@ -1,28 +1,27 @@
-# Тайпинг Ассист для питона
+# Python Typing Assistant
 
-## Описание
+## Description
 
-Расширение для среды разработки, предназначенное для облегчения процесса написания кода. Оно включает в себя несколько ассистентов, которые помогают автоматизировать некоторые рутинные задачи при программировании на языке Python.
+This extension for development environments aims to streamline the coding process by providing several assistants to automate some routine tasks when programming in Python.
 
-## Доступные Ассистенты
+## Available Assistants
 
 ### StringSeparator
 
-Позволяет легко разделять длинные строки на более короткие с сохранением форматирования.
+Allows easy splitting of long strings into shorter ones while preserving formatting.
 
 ```python
-print("some |text")
-|
-v
-print("some "
-      "text")
+print(r"some<\n> test")
+-------------------
+print(r"some"
+      r"<caret> test")
 ```
 
 ### DocstringCompleter
 
-Автоматически расширяет докстроки в различных форматах для удобства документирования кода.
+Automatically expands docstrings into various formats for convenient code documentation.
 
-Доступные форматы:
+Available formats:
 
 - Plain
 - NumPy
@@ -31,20 +30,27 @@ print("some "
 - Epytext
 
 ```python
-def f(a: int, b="some") -> int:
-    """|"""
-|
-v
-def f(a: int, b="some") -> int:
+def f(self, var1, var2, *args, long_var_name="hi", only_seldom_used_keyword: int = 0, **kwargs) -> int:
+    """<\n>"""
+-------------------
+def f(self, var1, var2, *args, long_var_name="hi", only_seldom_used_keyword: int = 0, **kwargs) -> int:
     """
-    |
+
 
     Parameters
     ----------
-    a: int
-        |
-    b: Any = "some"
-        |
+    var1: Any
+        <caret>
+    var2: Any
+
+    *args: iterable
+
+    long_var_name: Any = "hi"
+
+    only_seldom_used_keyword: int = 0
+
+    **kwargs: dict
+
 
     Returns
     -------
@@ -55,24 +61,96 @@ def f(a: int, b="some") -> int:
 
 ### FunctionCompleter
 
-Помогает быстро завершить написание функций после ввода открывающих скобок.
+Helps quickly complete writing functions after typing opening parentheses.
 
 ```python
-def my_function()
-|
-v
-def my_function():
+def f<()>
+-------------------
+def f(<caret>):
     pass
+```
+
+```python
+class A:
+    def f<()>
+-------------------
+class A:
+    def f(self<caret>):
+        pass
 ```
 
 ### BracketingExpressionCompleter
 
-Автоматически оборачивает выражения в скобки после операторов присваивания или возврата, когда строки кода разбиваются на несколько строк.
+Automatically wraps expressions in parentheses after assignment or return operators when lines of code are split into multiple lines.
 
 ```python
-return some_long_expression + | another_long_expression
-|
-v
-return (some_long_expression +
-          another_long_expression)
+some = "123"<\n> + 123
+-------------------
+some = ("123"
+        <caret>+ 123)
+```
+
+```python
+return some + some_else + 123 +<\n> (' 12'
+                                ''
+                                ''
+                                '3123')
+-------------------
+
+return (some + some_else + 123 +
+        <caret>(' 12'
+                                ''
+                                ''
+                                '3123'))
+```
+
+There is also a version of this completer that uses the Pyright parser.
+
+### CommentSeparator
+
+Correctly splits comments
+
+```python
+# some<\n> test
+-------------------
+# some
+# <caret>test
+```
+
+### NewlineSpaceRemover
+
+Removes spaces after the cursor when breaking a line
+
+```python
+
+                return (some +       some_else)<\n>
+-------------------
+                return (some +       some_else)
+            <caret>
+```
+
+### ReturnDedent
+
+Dedents after pressing enter at the end of a return statement
+
+```python
+            def f():
+                return some + some_else<\n>
+-------------------
+            def f():
+                return some + some_else
+            <caret>
+```
+
+## Testing
+
+Tests are located in the `\src\test\typing_assist` folder. To run the tests, use the command `npm test`. The test format follows the examples shown above. Before the separator in angle brackets, the text indicates what should be written to trigger the assistant. After the separator, the `<caret>` indicates the final cursor position.
+
+Example:
+
+```python
+# some<\n> test
+-------------------
+# some
+# <caret>test
 ```

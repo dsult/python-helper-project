@@ -3,7 +3,10 @@
   "displayName": "Python helper project",
   "description": "",
   "version": "0.5.1",
-  "repository": "https://github.com/dsult/python-helper-project",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dsult/python-helper-project"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },

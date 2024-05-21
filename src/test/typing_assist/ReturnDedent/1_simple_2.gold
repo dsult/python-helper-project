@@ -1,0 +1,4 @@
+                return some + some_else<\n>
+-------------------
+                return some + some_else
+            <caret>

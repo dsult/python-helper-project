@@ -62,7 +62,7 @@ To ensure the correctness and reliability of the `smartDelete` functionality, a 
 ### Example Test
 
 ```text
-s = "123" + "big string which hard to delete"<caret>
+s = "123" + "big string which <caret>hard to delete"
 -------------------
 s = "123"<caret>
 ```

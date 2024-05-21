@@ -1,4 +1,4 @@
-                return some + some_else<\n>
+                return (some + <\n>      some_else)
 -------------------
-                return some + some_else
-            <caret>
+                return (some + 
+                <caret>some_else)
