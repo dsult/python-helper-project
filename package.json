@@ -2,7 +2,8 @@
   "name": "python-helper-project",
   "displayName": "Python helper project",
   "description": "",
-  "version": "0.5.0",
+  "version": "0.5.1",
+  "repository": "https://github.com/dsult/python-helper-project",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -144,6 +145,7 @@
     ]
   },
   "scripts": {
+    "package": "vsce package",
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./ && xcopy /E /I /Y src\\lib out\\lib && xcopy /E /I /Y src\\test out\\test",
     "watch": "tsc -watch -p ./",
