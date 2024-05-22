@@ -61,36 +61,36 @@ export async function activate(context: vscode.ExtensionContext) {
     changeConfiguration(e, context)
   );
 
-  // отладочная штука
-  disposable = vscode.commands.registerCommand(
-    "python-helper-project.test",
-    async () => {
-      // Create the lexer and parser
-      let inputStream = CharStreams.fromString("print(123)");
-      let lexer = new PythonLexer(inputStream);
-      let tokenStream = new CommonTokenStream(lexer);
-      let parser = new PythonParser(tokenStream);
-      // Parse the input, where `compilationUnit` is whatever entry point you defined
-      let tree = parser.file_input();
-      console.log(tree);
+  //   // отладочная штука
+  //   disposable = vscode.commands.registerCommand(
+  //     "python-helper-project.test",
+  //     async () => {
+  //       // Create the lexer and parser
+  //       let inputStream = CharStreams.fromString("print(123)");
+  //       let lexer = new PythonLexer(inputStream);
+  //       let tokenStream = new CommonTokenStream(lexer);
+  //       let parser = new PythonParser(tokenStream);
+  //       // Parse the input, where `compilationUnit` is whatever entry point you defined
+  //       let tree = parser.file_input();
+  //       console.log(tree);
 
-      //   const tree = assistService.tree;
-      //   let editor = assistService.editor;
-      //   if (!editor) {
-      //     return;
-      //   }
-      //   const position = editor.selection.active;
-      //   const currentNode = tree.rootNode.descendantForPosition({
-      //     row: position.line,
-      //     column: position.character,
-      //   });
-      //   console.log(123);
-      //   console.log(assistService.tree);
-      //   console.log(currentNode);
-      //   console.log(currentNode.text);
-    }
-  );
-  context.subscriptions.push(disposable);
+  //       //   const tree = assistService.tree;
+  //       //   let editor = assistService.editor;
+  //       //   if (!editor) {
+  //       //     return;
+  //       //   }
+  //       //   const position = editor.selection.active;
+  //       //   const currentNode = tree.rootNode.descendantForPosition({
+  //       //     row: position.line,
+  //       //     column: position.character,
+  //       //   });
+  //       //   console.log(123);
+  //       //   console.log(assistService.tree);
+  //       //   console.log(currentNode);
+  //       //   console.log(currentNode.text);
+  //     }
+  //   );
+  //   context.subscriptions.push(disposable);
 }
 
 export function deactivate() {}

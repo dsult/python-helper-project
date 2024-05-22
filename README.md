@@ -22,11 +22,10 @@ The Typing Assist feature serves as a code completer, aiding developers in writi
 #### Micro Example:
 
 ```python
-print("some |text")
-|
-v
+print("some <caret>text")
+-------------------
 print("some "
-      "text")
+      "<caret>text")
 ```
 
 For detailed usage instructions, refer to the README located in `src/typing_assist`.
@@ -37,8 +36,8 @@ Smart Delete provides intelligent deletion capabilities, making it easier to rem
 
 #### Micro Example:
 
-```text
-s = "123" + "big string which <caret>hard to delete"
+```python
+s = "123" + "big string which hard to delete"<caret>
 -------------------
 s = "123"<caret>
 ```
