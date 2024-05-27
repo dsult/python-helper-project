@@ -87,7 +87,7 @@ export class TypeAssistService {
           },
         });
       } else {
-        // !!!!!!!!!!!!!!!!!!!!!А сюда вообще можно попасть?
+        // !!!!!!!!!!!!!!!!!!!!!А сюда вообще можно попасть? (не по причине this.editor.document.languageId === "python")
         // console.log("дерево не сделалось???");
       }
     });

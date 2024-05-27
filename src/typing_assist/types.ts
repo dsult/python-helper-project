@@ -18,6 +18,7 @@ export interface ITypingAssist {
   apply(context: Context): void;
 }
 
+// можно добавлять поля если нужно
 export interface Context {
   tree: Parser.Tree;
   parser: Parser;
