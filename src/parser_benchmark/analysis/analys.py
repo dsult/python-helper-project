@@ -1,6 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 y_max = 8
 
@@ -47,15 +48,15 @@ plt.scatter(sizes, antlr_times, label='antlr', alpha=0.7, zorder=1)
 # Линии тренда
 z_tree_sitter = np.polyfit(sizes, tree_sitter_times, 1)
 p_tree_sitter = np.poly1d(z_tree_sitter)
-plt.plot(sizes, p_tree_sitter(sizes), color='blue', linestyle='-', linewidth=2, label='Tree Sitter Trend', zorder=4)
+plt.plot(sizes, p_tree_sitter(sizes), color='darkblue', linestyle='-', linewidth=2, label='Tree Sitter Trend', zorder=4)
 
 z_pyright = np.polyfit(sizes, pyright_times, 1)
 p_pyright = np.poly1d(z_pyright)
-plt.plot(sizes, p_pyright(sizes), color='orange', linestyle='-', linewidth=2, label='Pyright Trend', zorder=4)
+plt.plot(sizes, p_pyright(sizes), color='gold', linestyle='-', linewidth=2, label='Pyright Trend', zorder=4)
 
 z_antlr = np.polyfit(sizes, antlr_times, 1)
 p_antlr = np.poly1d(z_antlr)
-plt.plot(sizes, p_antlr(sizes), color='green', linestyle='-', linewidth=2, label='antlr Trend', zorder=4)
+plt.plot(sizes, p_antlr(sizes), color='lime', linestyle='-', linewidth=2, label='antlr Trend', zorder=4)
 
 plt.xlabel('Размер файла')
 plt.ylabel('Время выполнения (млсек)')

@@ -61,7 +61,7 @@ def f(self, var1, var2, *args, long_var_name="hi", only_seldom_used_keyword: int
 
 ### FunctionCompleter
 
-Helps quickly complete writing functions after typing opening parentheses.
+Helps quickly complete writing functions after typing opening parentheses. Also, by looking at the decorator in front of the function, it can be understood that it is a getter or setter and correctly complemented.
 
 ```python
 def f<()>
